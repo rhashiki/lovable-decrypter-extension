@@ -79,6 +79,27 @@
     return `${node.label} ${node.key} ${node.type} ${(node.evidence || []).map(e => `${e.path} ${e.reason} ${e.detail}`).join(' ')}`.toLowerCase().includes(q);
   }
 
+  function renderMeta(target) {
+    const freshness = state.map?.freshness || {};
+    const runtime = state.map?.runtime || {};
+    const meta = el('div', 'ld96-meta');
+    const title = el('strong', '', state.map?.project?.github || 'Projeto');
+    meta.appendChild(title);
+    meta.appendChild(document.createTextNode(` · ${state.map?.project?.branch || 'main'}`));
+    meta.appendChild(document.createElement('br'));
+    meta.appendChild(document.createTextNode(`HEAD ${shortSha(freshness.headSha)} · ${freshness.stale ? 'STALE' : 'fresh'} · ${runtime.databaseIntrospectionAvailable ? 'Supabase schema ✓' : 'Supabase schema indisponível'}`));
+    meta.appendChild(document.createElement('br'));
+    meta.appendChild(document.createTextNode('Static analysis · sem write authority · sem polling'));
+    target.appendChild(meta);
+  }
+
+  function nodeBelongsToPath(node, path) {
+    if (!node || !path) return false;
+    if (node.type === 'file' && node.key === path) return true;
+    if (node.meta?.path === path) return true;
+    return (node.evidence || []).some(item => item?.path === path);
+  }
+
   function render() {
     const target = detail(); if (!target || target.dataset.module !== MODULE_ID) return;
     ensureStyles(); clear(target);
@@ -94,10 +115,7 @@
     const summary = el('div', 'ld96-summary');
     for (const [label, value] of [['Nós', state.map.nodes.length], ['Relações', state.map.edges.length], ['Arquivos', state.map.limits?.analyzedFiles || 0]]) { const card = el('div', 'ld96-stat'); card.append(el('b', '', value), el('span', '', label)); summary.appendChild(card); }
     target.appendChild(summary);
-
-    const freshness = state.map.freshness || {}; const runtime = state.map.runtime || {};
-    const meta = el('div', 'ld96-meta'); meta.innerHTML = `<strong>${state.map.project?.github || 'Projeto'}</strong> · ${state.map.project?.branch || 'main'}<br>HEAD ${shortSha(freshness.headSha)} · ${freshness.stale ? 'STALE' : 'fresh'} · ${runtime.databaseIntrospectionAvailable ? 'Supabase schema ✓' : 'Supabase schema indisponível'}<br>Static analysis · sem write authority · sem polling`;
-    target.appendChild(meta);
+    renderMeta(target);
 
     const filters = el('div', 'ld96-filters');
     const options = [['all','Tudo'], ...TYPES.map(type => [type, LABELS[type] || type])];
@@ -139,12 +157,14 @@
     state.busy = true; state.error = ''; render();
     try {
       const partial = await center.refreshPath(path);
-      const nodeMap = new Map((state.map?.nodes || []).map(item => [item.id, item]));
+      const removedNodeIds = new Set((state.map?.nodes || []).filter(item => nodeBelongsToPath(item, path)).map(item => item.id));
+      const nodeMap = new Map((state.map?.nodes || []).filter(item => !removedNodeIds.has(item.id)).map(item => [item.id, item]));
       for (const item of partial.nodes || []) nodeMap.set(item.id, item);
-      const edgeMap = new Map((state.map?.edges || []).filter(item => !((item.evidence || []).some(ev => ev.path === path))).map(item => [item.id, item]));
+      const edgeMap = new Map((state.map?.edges || []).filter(item => !removedNodeIds.has(item.from) && !removedNodeIds.has(item.to) && !((item.evidence || []).some(ev => ev.path === path))).map(item => [item.id, item]));
       for (const item of partial.edges || []) edgeMap.set(item.id, item);
       const nodes = [...nodeMap.values()]; const counts = {}; for (const item of nodes) counts[item.type] = (counts[item.type] || 0) + 1;
       state.map = Object.freeze({ ...state.map, freshness: partial.freshness, runtime: partial.runtime, nodes: Object.freeze(nodes), edges: Object.freeze([...edgeMap.values()]), counts: Object.freeze(counts) });
+      state.expanded = '';
     } catch (error) { state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`; }
     finally { state.busy = false; render(); }
   }
