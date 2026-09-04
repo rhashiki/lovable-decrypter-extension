@@ -1,0 +1,56 @@
+name: v2.6 Build 91 · Canonical Activity + Audit
+
+on:
+  push:
+    branches: [v2.6.91-canonical-activity-audit]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-activity-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical audit surface
+        run: |
+          node --check launcher/canonical-activity-audit.js
+          node --check content/canonical-activity-audit-client.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · audit authority
+        run: |
+          node --check background/activity-audit-runtime.js
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Build91 canonical activity audit contract
+        run: node tests/build91-canonical-activity-audit.test.mjs
+
+      - name: Audit remains read-only and redacted
+        run: |
+          grep -q "readOnly: true" background/activity-audit-runtime.js content/canonical-activity-audit-client.js
+          grep -q "rawPromptIncluded: false" background/activity-audit-runtime.js content/canonical-activity-audit-client.js
+          grep -q "rawModelOutputIncluded: false" background/activity-audit-runtime.js content/canonical-activity-audit-client.js
+          grep -q "rawFileContentIncluded: false" background/activity-audit-runtime.js content/canonical-activity-audit-client.js
+          grep -q "credentialsIncluded: false" background/activity-audit-runtime.js content/canonical-activity-audit-client.js
+          ! grep -n "command: row?.command" background/activity-audit-runtime.js
+
+      - name: Canonical audit has no mutation API
+        run: |
+          ! grep -n -E "invoke\(|apply\(|commit\(|write\(" content/canonical-activity-audit-client.js
+          ! grep -n -E "approve|execute|mutation" launcher/canonical-activity-audit.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "innerHTML" launcher/canonical-activity-audit.js
+          ! grep -n "setInterval(" launcher/canonical-activity-audit.js content/canonical-activity-audit-client.js
+          ! grep -n "MutationObserver" launcher/canonical-activity-audit.js content/canonical-activity-audit-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-activity-audit.js content/canonical-activity-audit-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
