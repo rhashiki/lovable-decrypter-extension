@@ -72,9 +72,9 @@
     'tool-runtime': async () => window.LovableDecrypterCanonicalToolsApi?.snapshot
       ? safe('tool-runtime', () => window.LovableDecrypterCanonicalToolsApi.snapshot())
       : asError('Canonical Tool Runtime client não carregado.'),
-    'mcp-runtime': async () => window.LovableDecrypterMCP?.status
-      ? safe('mcp-runtime', () => window.LovableDecrypterMCP.status())
-      : asError('MCP Runtime client não carregado.'),
+    'mcp-runtime': async () => window.LovableDecrypterCanonicalMcpApi?.snapshot
+      ? safe('mcp-center', () => window.LovableDecrypterCanonicalMcpApi.snapshot())
+      : asError('Canonical MCP Center client não carregado.'),
     'agent-sandbox': async () => serviceWorkerStatus(),
     'smart-undo': async () => window.LovableDecrypterReversibleOperations?.status
       ? safe('reversible-operations', () => window.LovableDecrypterReversibleOperations.status())
@@ -115,6 +115,7 @@
         tools: Boolean(window.LovableDecrypterTools),
         canonicalTools: Boolean(window.LovableDecrypterCanonicalToolsApi),
         mcp: Boolean(window.LovableDecrypterMCP),
+        canonicalMcp: Boolean(window.LovableDecrypterCanonicalMcpApi),
         context: Boolean(window.LovableDecrypterContext),
         canonicalContextScope: Boolean(window.LovableDecrypterCanonicalContextScopeApi),
         reversible: Boolean(window.LovableDecrypterReversibleOperations),
@@ -161,7 +162,8 @@
     return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalProjectState?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalToolRuntime?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalContextScope?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalContextScope?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalMcpCenter?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
