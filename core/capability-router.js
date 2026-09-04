@@ -54,7 +54,7 @@ function publicCapability(id, status, evidence = '', reason = '') {
     status,
     evidence: evidence || null,
     reason: reason || null,
-    executableWithoutConfirmation: status === 'required',
+    executableWithoutConfirmation: false,
     expandsIntent: false
   });
 }
