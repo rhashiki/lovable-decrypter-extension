@@ -2,9 +2,9 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 82 — Canonical Launcher / Legacy UI Purge**. Builds 60→75 remain the preserved modern engine foundation. Builds 76→82 were the stabilization, emergency isolation, diagnostic and visual-authority sequence that removed the layered legacy UI and intentionally left the modern engines source-only. Build 83 begins controlled functional reattachment through the canonical launcher.
+Current engineering baseline: **Build 89 — Canonical Agent Center**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→88 have now reattached the preserved modern engines to the single canonical launcher with dedicated CI gates.
 
-> Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document establishes that remaining sequence now, from the verified Build 82 state. No number below is retroactively claimed as an older committed roadmap.
+> Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
 ## Product invariants
 
@@ -96,42 +96,44 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 
 ---
 
-# Remaining canonical roadmap
+# Canonical functional reattachment
 
 ## Phase A — Make the canonical product functional
 
-### Build 83 — Canonical Runtime Wiring + CI Reconciliation 🚧 CURRENT
-- Re-enable `background/service-worker-entry.js` without restoring legacy UI.
-- Re-enable only non-visual modern content clients required by the canonical launcher.
-- Introduce a canonical runtime bridge between launcher and preserved engines.
-- Replace Build-82 placeholder state (`functional modules OFF`) with real runtime/readiness state.
-- Reconcile cumulative CI so old workflows cannot require physically purged `ui/` files.
-- Add fail-closed smoke tests proving launcher → bridge → service worker connectivity.
+### Build 83 — Canonical Runtime Wiring + CI Reconciliation ✅
+- Re-enabled `background/service-worker-entry.js` without restoring legacy UI.
+- Re-enabled only non-visual modern clients required by the canonical launcher.
+- Added canonical runtime bridge and Build83 CI contract.
 
-### Build 84 — Canonical Integrations Center
-- Wire GitHub App, Supabase OAuth, Lovable project mapping and integration-readiness status into the canonical launcher.
-- Connect/disconnect/revalidate actions use existing secure runtimes; no PAT/server-storage regression.
-- Show explicit authorization scope and project mapping.
+### Build 84 — Canonical Integrations Center ✅
+- GitHub App, Supabase OAuth, Lovable mappings and Gemini readiness are wired into the canonical launcher.
+- Connect/disconnect/map/test flows use existing secure runtimes; no PAT regression.
+- Event-driven integration UX; old integration overlay/polling remains absent.
 
-### Build 85 — Canonical Project State
-- Expose Unified Project State Graph, repository mapping, branch/head, Supabase mapping and Lovable project identity.
-- Replace internal engine terminology with a clear “Project State” surface.
+### Build 85 — Canonical Project State ✅
+- On-demand canonical snapshot for Lovable identity, GitHub repository/branch/HEAD and Supabase mapping/inspection.
+- Secrets are sanitized before UI exposure.
+- Old 30-second project polling remains inactive.
 
-### Build 86 — Canonical Tool Runtime
-- Expose available coding tools, invocation status and Operation Journal through the canonical launcher.
-- Preserve approval/Scope/Continuity gates for every mutation.
+### Build 86 — Canonical Tool Runtime ✅
+- Real Tool Runtime registry and Operation Journal visible in canonical UI.
+- Safe real read smoke test via `repo.list_files`.
+- Direct canonical writes are blocked; validated transaction + Scope/Continuity remains mandatory.
 
-### Build 87 — Canonical Context + Scope
-- Expose Context Engine v2 and Scope Intelligence as one understandable project-understanding surface.
-- Show files/context selected, protected user edits, proposed scope and scope violations.
+### Build 87 — Canonical Context + Scope ✅
+- Context Engine v2 and Scope Intelligence v2 exposed as one understandable surface.
+- Real Context Pack generation, selected file paths, context sources and Human Intent Locks.
+- Visual preflight is explicitly distinct from formal request→plan→diff validation before write.
 
-### Build 88 — Canonical MCP Center
-- Wire MCP Runtime, Trust Gateway and curated marketplace without reintroducing legacy marketplace UI.
-- Make provenance, permissions and write capabilities visible before enablement.
+### Build 88 — Canonical MCP Center ✅
+- MCP Runtime, Trust Gateway and curated Marketplace exposed through the canonical launcher.
+- Provenance, publisher/domain, trust, host permission, tool discovery and local policy are visible.
+- Unknown tools default deny; canonical enablement is READ-only; MCP writes retain exact-call one-time human approval.
 
-### Build 89 — Canonical Agent Center
+### Build 89 — Canonical Agent Center 🚧 CURRENT
 - Wire Local Agent Orchestrator, Runtime Registry, Portable Skills, Sandbox and Native Sessions into one canonical agent surface.
 - Keep all external runtimes proposal-only.
+- Agent Center is management/observability only; command execution remains scheduled for Build 92.
 
 ### Build 90 — Canonical Continuity + Recovery
 - Surface Continuity tasks, checkpoints, Smart Undo/Redo and Recovery Doctor from the canonical UI.
