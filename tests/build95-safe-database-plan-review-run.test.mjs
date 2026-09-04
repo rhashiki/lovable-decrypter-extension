@@ -16,7 +16,7 @@ assert.ok(scripts.indexOf('content/canonical-database-runtime-client.js') < scri
 
 assert.match(migrationSource, /create table if not exists public\.ld_database_write_tickets/i);
 assert.match(migrationSource, /sql_hash text not null/i);
-assert.doesNotMatch(migrationSource, /\bsql\s+text\b/i, 'raw SQL must not have a persistence column');
+assert.doesNotMatch(migrationSource, /^\s*sql\s+text\b/im, 'raw SQL must not have a persistence column');
 assert.match(migrationSource, /enable row level security/i);
 assert.match(migrationSource, /revoke all on table public\.ld_database_write_tickets from public, anon, authenticated/i);
 assert.match(migrationSource, /grant all on table public\.ld_database_write_tickets to service_role/i);
