@@ -35,12 +35,12 @@
     'context-pack': async () => window.LovableDecrypterCanonicalContextScopeApi?.status ? safe('context-scope', () => window.LovableDecrypterCanonicalContextScopeApi.status()) : asError('Canonical Context + Scope client não carregado.'),
     'local-agent': async () => window.LovableDecrypterCanonicalAgentApi?.snapshot ? safe('agent-center', () => window.LovableDecrypterCanonicalAgentApi.snapshot()) : asError('Canonical Agent Center client não carregado.'),
     'scope-intelligence': async () => window.LovableDecrypterCanonicalContextScopeApi?.status ? safe('context-scope', () => window.LovableDecrypterCanonicalContextScopeApi.status()) : asError('Canonical Context + Scope client não carregado.'),
-    continuity: async () => window.LovableDecrypterContinuity?.status ? safe('continuity', () => window.LovableDecrypterContinuity.status()) : asError('Continuity client não carregado.'),
+    continuity: async () => window.LovableDecrypterCanonicalContinuityRecoveryApi?.snapshot ? safe('continuity-recovery', () => window.LovableDecrypterCanonicalContinuityRecoveryApi.snapshot()) : asError('Canonical Continuity + Recovery client não carregado.'),
     'tool-runtime': async () => window.LovableDecrypterCanonicalToolsApi?.snapshot ? safe('tool-runtime', () => window.LovableDecrypterCanonicalToolsApi.snapshot()) : asError('Canonical Tool Runtime client não carregado.'),
     'mcp-runtime': async () => window.LovableDecrypterCanonicalMcpApi?.snapshot ? safe('mcp-center', () => window.LovableDecrypterCanonicalMcpApi.snapshot()) : asError('Canonical MCP Center client não carregado.'),
     'agent-sandbox': async () => window.LovableDecrypterCanonicalAgentApi?.snapshot ? safe('agent-center', () => window.LovableDecrypterCanonicalAgentApi.snapshot()) : asError('Canonical Agent Center client não carregado.'),
-    'smart-undo': async () => window.LovableDecrypterReversibleOperations?.status ? safe('reversible-operations', () => window.LovableDecrypterReversibleOperations.status()) : asError('Reversible Operations client não carregado.'),
-    checkpoint: async () => window.LovableDecrypterContinuity?.status ? safe('checkpoints', () => window.LovableDecrypterContinuity.status()) : asError('Continuity client não carregado.'),
+    'smart-undo': async () => window.LovableDecrypterCanonicalContinuityRecoveryApi?.snapshot ? safe('continuity-recovery', () => window.LovableDecrypterCanonicalContinuityRecoveryApi.snapshot()) : asError('Canonical Continuity + Recovery client não carregado.'),
+    checkpoint: async () => window.LovableDecrypterCanonicalContinuityRecoveryApi?.snapshot ? safe('continuity-recovery', () => window.LovableDecrypterCanonicalContinuityRecoveryApi.snapshot()) : asError('Canonical Continuity + Recovery client não carregado.'),
     'runtime-events': async () => serviceWorkerStatus(),
     operations: async () => window.LovableDecrypterTools?.journal ? safe('operation-journal', () => window.LovableDecrypterTools.journal({ projectId:projectId(), limit:20 })) : asError('Operation Journal client não carregado.'),
     security: async () => serviceWorkerStatus(),
@@ -66,6 +66,7 @@
         mcp:Boolean(window.LovableDecrypterMCP), canonicalMcp:Boolean(window.LovableDecrypterCanonicalMcpApi),
         context:Boolean(window.LovableDecrypterContext), canonicalContextScope:Boolean(window.LovableDecrypterCanonicalContextScopeApi),
         reversible:Boolean(window.LovableDecrypterReversibleOperations), continuity:Boolean(window.LovableDecrypterContinuity),
+        canonicalRecovery:Boolean(window.LovableDecrypterCanonicalContinuityRecoveryApi),
         localAgent:Boolean(window.LovableDecrypterLocalAgent), canonicalAgent:Boolean(window.LovableDecrypterCanonicalAgentApi),
         integrationGate:Boolean(window.LovableDecrypterAccountIntegrationGate), projectState:Boolean(window.LovableDecrypterCanonicalProjectStateApi),
         runtimeRegistry:Boolean(window.LovableDecrypterAgentRuntimeRegistryClient), portableSkills:Boolean(window.LovableDecrypterPortableSkills),
@@ -96,7 +97,8 @@
       window.LovableDecrypterCanonicalToolRuntime?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalContextScope?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalMcpCenter?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalAgentCenter?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalAgentCenter?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalContinuityRecovery?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
