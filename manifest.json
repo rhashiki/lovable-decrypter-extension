@@ -1,24 +1,69 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.82",
-  "version_name": "2.6 Build 82 · Canonical Launcher / Legacy UI Purge",
-  "description": "Canonical v11 launcher as the single visual authority. Legacy UI, diagnostic shells, fallback mounts, polling, observers, background execution and provider runtimes remain absent from the shipped surface.",
+  "version": "2.6.83",
+  "version_name": "2.6 Build 83 · Canonical Runtime Wiring",
+  "description": "Canonical launcher wired to the preserved local-first runtime stack. One visual authority, modern backend clients only, no legacy UI restoration.",
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
+  "permissions": [
+    "storage",
+    "tabs",
+    "downloads",
+    "unlimitedStorage",
+    "alarms",
+    "identity"
+  ],
   "host_permissions": [
     "https://lovable.dev/*",
-    "https://*.lovable.dev/*"
+    "https://*.lovable.dev/*",
+    "https://api.github.com/*",
+    "https://codeload.github.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.supabase.com/*",
+    "https://*.supabase.co/*"
   ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker-entry.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
-      "js": ["launcher/launcher-runtime.js"],
+      "js": [
+        "launcher/launcher-runtime.js"
+      ],
       "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
+      "js": [
+        "content/content.js",
+        "content/integration-readiness-client.js",
+        "content/tool-runtime-client.js",
+        "content/mcp-runtime-client.js",
+        "content/mcp-marketplace-client.js",
+        "content/context-engine-client.js",
+        "content/reversible-operations-client.js",
+        "content/continuity-runtime-client.js",
+        "content/local-agent-orchestrator-client.js",
+        "content/agent-runtime-registry-client.js",
+        "content/portable-skills-client.js",
+        "content/agent-sandbox-client.js",
+        "content/native-agent-session-client.js",
+        "launcher/canonical-runtime-wiring.js"
+      ],
+      "run_at": "document_idle",
       "all_frames": false
     }
   ],
@@ -27,11 +72,11 @@
       "id": "lovable-decrypter@rhashiki.dev",
       "strict_min_version": "121.0",
       "data_collection_permissions": {
-        "required": ["websiteContent"]
+        "required": ["authenticationInfo", "websiteContent"]
       }
     }
   },
   "action": {
-    "default_title": "Lovable Decrypter v2.6.82 · Canonical Launcher"
+    "default_title": "Lovable Decrypter v2.6.83 · Canonical Runtime"
   }
 }
