@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 95 — Safe Database Plan → Review → Run**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→95 have now reattached the preserved modern engines, canonical command UX, capability routing and ticketed database execution to the single launcher with dedicated CI gates. Build 96 is the current implementation target.
+Current engineering baseline: **Build 96 — Project Understanding / Context Map**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→96 have now reattached the preserved modern engines, canonical command UX, capability routing, safe database execution and deterministic project understanding to the single launcher with dedicated CI gates. Build 97 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -172,11 +172,14 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 - Destructive operations require explicit human confirmation plus recovery evidence; ambiguous write outcomes require verification and are never retried automatically.
 - CODE + DATABASE remains fail-closed until the parent transaction/orchestration builds exist.
 
-### Build 96 — Project Understanding / Context Map 🚧 CURRENT
-- Turn Context Engine + Project State Graph into a visual, user-readable map of routes, components, files, dependencies, APIs and database relationships.
-- Show confidence/freshness and allow targeted refresh.
+### Build 96 — Project Understanding / Context Map ✅
+- Context Engine v2, canonical Project State and preserved Build 27 reconciliation concepts are exposed as one deterministic read-only map.
+- Detects routes, components, files, package dependencies, HTTP/Supabase APIs, database references, migrations and Edge Functions from bounded repository evidence.
+- Each node/relation carries evidence + confidence; snapshots carry `headSha`, collection time and stale state.
+- Raw source is never returned in the map, model inference is not required, sensitive paths fail closed and the map has no write authority.
+- Targeted refresh can update one path without full polling; legacy Project State Graph UI/scripts remain inactive.
 
-### Build 97 — Change Transactions
+### Build 97 — Change Transactions 🚧 CURRENT
 - Represent each requested change as one transaction containing intent, plan, files, diff, database actions, tests, approvals, commit and recovery state.
 - Provide Explain / Review / Revert from the same transaction object.
 
