@@ -1,122 +1,265 @@
-# Lovable Decrypter v2.6 — Local-First AI Roadmap
+# Lovable Decrypter v2.6 — Canonical Local-First AI Roadmap
 
-Status baseline: Build 75 — Universal Agent Bench / External-Agent Hardening is the current engineering baseline. Builds 60→75 are implemented with cumulative CI green. The Universal Agent Control Plane automated phase is complete. Build 70 provider-side validation is complete; the remaining gate is the final cumulative Chrome/provider homologation. Merge to `main`, OTA metadata, GitHub Release, store publication and production rollout remain separately unauthorized.
+Canonical rebaseline: 2026-09-04.
+
+Current engineering baseline: **Build 82 — Canonical Launcher / Legacy UI Purge**. Builds 60→75 remain the preserved modern engine foundation. Builds 76→82 were the stabilization, emergency isolation, diagnostic and visual-authority sequence that removed the layered legacy UI and intentionally left the modern engines source-only. Build 83 begins controlled functional reattachment through the canonical launcher.
+
+> Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document establishes that remaining sequence now, from the verified Build 82 state. No number below is retroactively claimed as an older committed roadmap.
 
 ## Product invariants
 
-1. **No paid GPU server is required.** Local inference remains the default path.
-2. **No commercial token quota is required.** Context budgeting handles technical limits without making a paid provider mandatory.
-3. **Work must survive model/runtime interruption.** Continuity and checkpoints remain outside model reasoning.
-4. **No automatic paid-AI fallback.** Remote providers remain explicit opt-in only.
-5. **Human edits outrank previous AI edits.** `USER_EDIT > AI_EDIT`; Human Intent and Scope Intelligence remain authoritative.
-6. Writes are fail-closed behind approval, Tool Runtime, Continuity, Account Integration Gate and Guarded Commit.
-7. GitHub App + authorized repository and Supabase OAuth + authorized project are required for project mutation.
-8. External agents can analyze and propose but never become authoritative writers.
-9. Provider/runtime credentials are server-side or session-only and are not durable project state.
-10. Security claims require executable adversarial CI plus final browser/provider homologation.
+1. **One visual authority.** `launcher/launcher-runtime.js` is the only extension-owned launcher/UI authority. Legacy `ui/`, diagnostic shells, fallback mounts and guardians must never return.
+2. **Local-first AI.** No paid GPU server is required; local inference remains the default path.
+3. **No commercial-token dependency.** Remote AI providers remain explicit opt-in only; no automatic paid fallback.
+4. **Continuity is outside model reasoning.** Tasks, leases, checkpoints and recovery survive model/runtime interruption.
+5. **Human edits outrank AI edits.** `USER_EDIT > AI_EDIT`; Scope Intelligence and Human Intent are authoritative.
+6. **Writes fail closed.** Approval, Tool Runtime, Continuity, Account Integration Gate and Guarded Commit remain mandatory for mutation.
+7. **Least privilege.** GitHub App + authorized repository and Supabase OAuth + authorized project are required for remote mutation.
+8. **External agents are proposal-only.** They never become authoritative writers.
+9. **Credentials are not durable project state.** Provider/runtime credentials remain server-side or session-only according to the existing Vault/security model.
+10. **No feature may restore legacy visual files merely to satisfy an old test.** CI must be reconciled to the canonical architecture instead.
+11. **Security and production claims require executable adversarial CI plus browser/provider homologation.**
+12. **No build below authorizes merge to `main`, OTA metadata, GitHub Release, Chrome Store publication or production rollout.** Those require separate explicit authorization.
 
-## Build 60 — Local Model Runtime ✅
+## Implemented modern foundation
 
-Ollama/vLLM + Qwen local runtime, health/pool contract, local-only routing and zero paid/remote fallback.
+### Build 60 — Local Model Runtime ✅
+Ollama/vLLM + local model routing, health/pool contract and zero paid/remote fallback by default.
 
-## Build 61 — Tool Runtime / Coding Tools ✅
+### Build 61 — Tool Runtime / Coding Tools ✅
+Provider-neutral repository/file tools, patch engine, grep/glob, Git diff, diagnostics and Operation Journal.
 
-Provider-neutral repository/file tools, patch engine, grep/glob, Git diff, diagnostics/LSP gates and Operation Journal.
+### Build 62 — MCP Core + Trust Gateway ✅
+MCP authentication, allowlists, Scope Lock, explicit write approval and Operation Journal integration.
 
-## Build 62 — MCP Core + MCP Trust Gateway ✅
-
-MCP authentication, allowlists, Scope Lock, explicit write approval, one-shot tickets and Operation Journal integration. MCP baseline: 2026-07-28.
-
-## Build 63 — Curated MCP Marketplace ✅
-
+### Build 63 — Curated MCP Marketplace ✅
 Controlled MCP catalog with provenance, permissions, trust/write capabilities and revocation state.
 
-## Build 64 — Context Engine v2 ✅
+### Build 64 — Context Engine v2 ✅
+Budgeted Context Packs from code, Git history, schemas/signals, Rules, Skills, Impact Maps, docs, diagnostics and manual edits.
 
-Budgeted Context Packs from code, Git history, schemas/signals, Rules, Skills, Impact Maps, docs, diagnostics and recent manual edits.
+### Build 65 — Scope Intelligence v2 + Human Intent ✅
+Request → plan → diff checks, unauthorized-file/action detection, broad rewrite detection and user-edit protection.
 
-## Build 65 — Scope Intelligence v2 + Human Intent ✅
+### Build 66 — Smart Undo/Redo + Reversible Operations ✅
+Three-way preservation of later user edits, symmetric Redo and explicit destructive modes.
 
-Request → plan → diff checks, unauthorized-file/action detection, broad rewrite detection and user-edit protection. `USER_EDIT > AI_EDIT`.
+### Build 67 — Continuity Engine ✅
+Durable tasks/steps with leases, idempotency keys and checkpoints; ambiguous writes require verification before retry.
 
-## Build 66 — Smart Undo/Redo + Reversible Operations ✅
-
-Three-way preservation of later user edits, symmetric Redo, one-shot HEAD-locked confirmation and explicit destructive modes.
-
-## Build 67 — Continuity Engine ✅
-
-Durable tasks/steps with leases, idempotency keys and checkpoints. Ambiguous writes require verification before retry.
-
-## Build 68 — Local Agent Orchestrator + Model Router ✅
-
+### Build 68 — Local Agent Orchestrator + Model Router ✅
 Local coding loop with model degradation, proposal digest, approval, Scope Intelligence, Tool Runtime, Continuity, diff and diagnostics/repair.
 
-## Build 69 — DecrypterBench v2 / Hardening ✅
+### Build 69 — DecrypterBench v2 / Hardening ✅
+Adversarial gates for path safety, stale/ambiguous patches, scope creep, Human Intent, Undo/Redo, proposal tampering, MCP trust and Continuity.
 
-Adversarial gates cover repository path safety, path traversal, stale/ambiguous patches, scope creep, Human Intent, Undo/Redo conflicts, proposal tampering, MCP trust, Continuity and zero-cost policy. This roadmap does not authorize merge to `main`.
+### Build 70 — Account Integration Gate ✅
+GitHub App + Supabase OAuth readiness, project mappings, remote-write revalidation and callback bridge.
 
-## Build 70 — Account Integration Gate ✅
+### Build 71 — Universal Agent Runtime Registry ✅
+Proposal-only runtime registry for local/external agents with bounded transports, session-only credentials and watchdogs.
 
-Mandatory GitHub App + Supabase OAuth readiness, project mappings, remote write revalidation, GitHub key-format compatibility, callback bridge, canonical Supabase scopes, safe refresh rotation and no-secret durable settings are implemented. Live provider validation covered real GitHub permissions, temporary-branch create/delete and real Supabase OAuth database-write capability. Browser homologation remains part of the final cumulative test.
+### Build 72 — Portable Skills v2 ✅
+Portable local-first `SKILL.md` packages with provenance/hash, bounded imports and immutable per-run staging.
 
-## Build 71 — Universal Agent Runtime Registry ✅
+### Build 73 — Agent Sandbox / Shadow Worktree ✅
+Sandbox identity, sensitive-path protection, bounded imported diffs and fresh Scope/Human-Intent validation before write.
 
-Registry `ld-agent-runtime-registry/1` supports `decrypter-local`, OpenHands Agent Server, Codex CLI, OpenCode and Aider. Every runtime is proposal-only (`writeAuthority:false`), process transports are bridge-required, HTTP/loopback probes are bounded, credentials are session-only, prompt transport is guarded and watchdogs cover first output/inactivity/total timeout. Final cumulative run: `33435818371`.
+### Build 74 — Multi-Agent Runtime + Native Sessions ✅
+Runtime/session continuity, proposal generation binding, runtime switching invalidation and replay protection.
 
-## Build 72 — Portable Skills v2 ✅
+### Build 75 — Universal Agent Bench / External-Agent Hardening ✅
+Final automated adversarial bench for the Build 65→74 authority model; external agents remain non-authoritative.
 
-Portable `SKILL.md` packages are local-first with provenance/hash, bounded imports, path traversal/private-network defenses, immutable per-run staging and local routing (`portable-local-v2`). Legacy/cloud catalogs remain optional synchronization sources. Skills cannot expand user intent or gain write authority. Final cumulative run: `33439609216`.
+## Stabilization and canonical-UI sequence
 
-## Build 73 — Agent Sandbox / Shadow Worktree ✅
+### Build 76 — Lovable Load Stability Hotfix ✅
+Reduced page-load instability while preserving the then-current functional stack.
 
-Sandbox identity binds `taskId + runtimeId + baseHeadSha`; materialization rejects path traversal, `.git`, environment/credential files, secret key formats, symlinks, hardlinks, junctions and special files. External runtimes receive no authoritative GitHub/Supabase credentials. Imported diffs are canonicalized, bounded and digest-bound, and require fresh Scope Intelligence/Human Intent before write. Physical worktree creation remains honestly `bridge-required` under MV3. Final cumulative run: `33440231905`.
+### Build 77 — Emergency Safe Mode ✅
+Introduced emergency isolation to stop extension-owned layers from destabilizing Lovable.
 
-## Build 74 — Multi-Agent Runtime UI + Native Sessions ✅
+### Build 78 — Emergency Kill Switch ✅
+Added hard shutdown/isolation capability for extension-owned execution during diagnosis.
 
-Explicit runtime picker, health/model/capability state and native-session continuity metadata are implemented. Decrypter/Continuity `taskId` remains authoritative. Proposals bind digest + generation; runtime switching increments generation, clears the old proposal and invalidates prior approval. Task/runtime/session/generation mismatch and replay fail closed. Session state remains in `chrome.storage.session`; `replayAllowed:false`, `replayAuthority:false` and `writeAuthority:false`. Final promoted cumulative run: `33443366826`.
+### Build 79 — Diagnostic Minimal Runtime ✅
+Reduced the active surface to establish the minimum stable runtime.
 
-## Build 75 — Universal Agent Bench / External-Agent Hardening ✅
+### Build 80 — Diagnostic FAB Injection ✅
+Validated isolated launcher/FAB injection independent of the legacy UI stack.
 
-Schema: `ld-universal-agent-bench/1`.
+### Build 81 — Diagnostic UI Shell ✅
+Validated the replacement visual shell before permanent structural purge.
 
-The final automated adversarial suite exercises the real Builds 65→74 components. Final corrected benchmark result: **24/24 probes passed**.
+### Build 82 — Canonical Launcher / Legacy UI Purge ✅
+Established `launcher/launcher-runtime.js` as the single visual authority and physically removed legacy visual layers, diagnostic shells, fallback mounts and guardians from the active package. Builds 60→75 engines were deliberately kept source-only for controlled future reattachment.
 
-Covered gates:
-- malformed agent actions;
-- sandbox path traversal and sensitive-path escape;
-- symlink/hardlink/special-file attacks;
-- stale base HEAD and stale approvals;
-- cross-agent runtime mismatch;
-- sandbox authority tampering / Tool Runtime bypass attempts;
-- proposal digest mismatch;
-- native-session generation mismatch and replay prevention;
-- closed/crashed session resume rejection;
-- unauthorized create/update/delete/rename and out-of-plan changes;
-- `USER_EDIT > AI_EDIT` Human Intent locks;
-- durable credential sanitization;
-- Windows command/environment-expansion prompt transport attacks and prompt size bounds;
-- external runtime event normalization without raw reasoning;
-- all registered adapters remain proposal-only and non-authoritative;
-- GitHub account/repository revocation fail-closed simulation;
-- Supabase OAuth/scope revocation fail-closed simulation;
-- real Local Model Router proof of `zeroCostApi:true`, `paidFallbackAllowed:false`, `remoteFallbackAllowed:false`.
+---
 
-Cumulative Builds 48→75, DecrypterBench v2, Universal Agent Bench and release-preflight passed on workflow run `33444039786` before this roadmap promotion.
+# Remaining canonical roadmap
 
-## Final cumulative homologation after Build 75 — NEXT GATE
+## Phase A — Make the canonical product functional
 
-Run the user-controlled Chrome/provider suite on the final Build 75 branch:
-- callback UI for GitHub and Supabase;
-- Lovable project → GitHub repo + Supabase project mapping;
-- runtime picker, probe/health and native-session UI;
-- runtime switching with visible invalidation of previous approval/proposal;
-- approved frontend mutation through agent → sandbox → diff → approval → authoritative Decrypter write;
-- approved backend mutation through the Supabase OAuth mapping;
-- GitHub revocation during active use → immediate fail-closed;
-- Supabase revocation/scope loss during active use → immediate fail-closed;
-- `chrome.storage.local` / `chrome.storage.session` inspection for credential leakage;
-- final confirmation that external agents never bypass Scope Intelligence, Human Intent, Tool Runtime, Account Integration Gate or Guarded Commit.
+### Build 83 — Canonical Runtime Wiring + CI Reconciliation 🚧 CURRENT
+- Re-enable `background/service-worker-entry.js` without restoring legacy UI.
+- Re-enable only non-visual modern content clients required by the canonical launcher.
+- Introduce a canonical runtime bridge between launcher and preserved engines.
+- Replace Build-82 placeholder state (`functional modules OFF`) with real runtime/readiness state.
+- Reconcile cumulative CI so old workflows cannot require physically purged `ui/` files.
+- Add fail-closed smoke tests proving launcher → bridge → service worker connectivity.
+
+### Build 84 — Canonical Integrations Center
+- Wire GitHub App, Supabase OAuth, Lovable project mapping and integration-readiness status into the canonical launcher.
+- Connect/disconnect/revalidate actions use existing secure runtimes; no PAT/server-storage regression.
+- Show explicit authorization scope and project mapping.
+
+### Build 85 — Canonical Project State
+- Expose Unified Project State Graph, repository mapping, branch/head, Supabase mapping and Lovable project identity.
+- Replace internal engine terminology with a clear “Project State” surface.
+
+### Build 86 — Canonical Tool Runtime
+- Expose available coding tools, invocation status and Operation Journal through the canonical launcher.
+- Preserve approval/Scope/Continuity gates for every mutation.
+
+### Build 87 — Canonical Context + Scope
+- Expose Context Engine v2 and Scope Intelligence as one understandable project-understanding surface.
+- Show files/context selected, protected user edits, proposed scope and scope violations.
+
+### Build 88 — Canonical MCP Center
+- Wire MCP Runtime, Trust Gateway and curated marketplace without reintroducing legacy marketplace UI.
+- Make provenance, permissions and write capabilities visible before enablement.
+
+### Build 89 — Canonical Agent Center
+- Wire Local Agent Orchestrator, Runtime Registry, Portable Skills, Sandbox and Native Sessions into one canonical agent surface.
+- Keep all external runtimes proposal-only.
+
+### Build 90 — Canonical Continuity + Recovery
+- Surface Continuity tasks, checkpoints, Smart Undo/Redo and Recovery Doctor from the canonical UI.
+- Add pause/resume/retry only where idempotency and verification allow it.
+
+### Build 91 — Canonical Activity + Audit
+- Consolidate Operation Journal, runtime events, approvals, commits and recovery events into a chronological audit surface.
+
+### Build 92 — Canonical Command Composer
+- Restore a single modern command surface for Plan/Build using the preserved authoritative backend.
+- Attach progress, cancellation, diff review and approval without reviving extension-owned legacy chat.
+
+### Build 93 — Attachments + Voice Input
+- Attach images/documents/audio to commands using existing backend limits and validation.
+- Add browser-safe voice dictation as an input convenience, never as autonomous execution authority.
+
+## Phase B — Shark Git learnings generalized for Lovable Decrypter
+
+### Build 94 — Intent & Capability Router
+- Classify each request into CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME, DEPLOY or MIXED capabilities.
+- Generate an explainable capability plan before execution.
+- Never let routing expand user intent.
+
+### Build 95 — Safe Database Plan → Review → Run
+- Add provider-neutral database planning with Supabase first.
+- Introspect schema, generate proposed SQL/migrations and classify SAFE / CAUTION / DESTRUCTIVE.
+- Destructive operations always require explicit approval and recovery/backup evidence where available.
+
+### Build 96 — Project Understanding / Context Map
+- Turn Context Engine + Project State Graph into a visual, user-readable map of routes, components, files, dependencies, APIs and database relationships.
+- Show confidence/freshness and allow targeted refresh.
+
+### Build 97 — Change Transactions
+- Represent each requested change as one transaction containing intent, plan, files, diff, database actions, tests, approvals, commit and recovery state.
+- Provide Explain / Review / Revert from the same transaction object.
+
+### Build 98 — Guided Autonomy + Policy Engine
+- Manual, Guided and Autonomous execution modes.
+- Capability-specific policy: edit/create/test may be auto; install/push/deploy/database/destructive actions can remain ASK/ALWAYS ASK.
+- Global autonomy must never bypass mandatory safety gates.
+
+### Build 99 — Git Transaction UX
+- Commit history cards, branch/head awareness, compare, guarded commit and safe revert integrated with Change Transactions.
+
+### Build 100 — Lovable Publish / Deployment Adapter
+- Treat Lovable publication as an explicit deployment capability.
+- Preflight, build/publish status, result verification and rollback/redeploy hooks; no silent deploy after code mutation.
+
+## Phase C — Product intelligence and usability
+
+### Build 101 — Mixed Code + Database Orchestration
+- Execute a single approved request across code and database capabilities while preserving separate authorization boundaries and one parent Change Transaction.
+
+### Build 102 — Beginner Onboarding
+- Guided first-run: project detection, integration readiness, local-runtime readiness and capability explanation.
+
+### Build 103 — Mentor / Explain Layer
+- Explain plans, files, database changes, errors, commits and recovery in user-appropriate language without changing execution authority.
+
+### Build 104 — Preview Component Inspector
+- Connect visible Lovable preview elements to component/file/context information where deterministically discoverable.
+- No fragile broad DOM observer as a permanent mount mechanism.
+
+### Build 105 — Context-to-Preview Navigation
+- Navigate Context Map ↔ source file ↔ related route/component ↔ change transaction from the canonical UI.
+
+### Build 106 — Migration Orchestrator
+- Re-expose the preserved Cloud/Supabase migration engines under canonical approval, progress, verification and recovery UX.
+
+### Build 107 — Project Workspace
+- Recent projects, aliases, mappings and per-project safe state without duplicating credentials into project storage.
+
+### Build 108 — Multi-Project Context Boundaries
+- Explicit project switching, context invalidation and prevention of cross-project proposal/approval reuse.
+
+## Phase D — Production hardening
+
+### Build 109 — Production Observability & Supportability
+- Structured health/status for launcher, service worker, local runtime, integrations and active transactions.
+- Privacy-preserving diagnostics export with secrets redacted.
+
+### Build 110 — Security Hardening v3
+- Threat-model refresh for canonical bridge, capability routing, database execution, deployment and multi-project state.
+- Adversarial CI for privilege expansion, replay, stale approvals and cross-capability escalation.
+
+### Build 111 — Performance & Lovable Coexistence
+- Budget startup/main-thread cost, service-worker wakeups and network/storage use.
+- Prove no permanent polling/MutationObserver mount loops and no Lovable interaction degradation.
+
+### Build 112 — Offline / Degraded Runtime
+- Graceful local-only/degraded behavior when providers are unavailable.
+- Queue only operations that are provably safe to resume; remote writes remain fail-closed.
+
+### Build 113 — Update & Recovery Channel v2
+- Canonical update status, integrity checks, rollback/recovery and explicit update controls without legacy updater UI.
+- No OTA publication is authorized by implementation alone.
+
+### Build 114 — Full Browser + Provider Homologation
+- Real Chrome validation for GitHub, Supabase, Lovable, local runtime, MCP, agents, approval transactions and revoked credentials.
+- Inspect local/session storage for credential leakage.
+
+### Build 115 — Release Candidate Hardening
+- Full cumulative CI, DecrypterBench, Universal Agent Bench, canonical-UI tests, performance budgets and security gates.
+- Freeze candidate only after zero legacy-reference regressions and functional acceptance.
+
+### Build 116 — Deployment Hub / Production Readiness
+- Unified explicit deployment/status surface for supported targets with environment/secrets boundaries, preflight, validation and rollback.
+- Final production-readiness dossier and release checklist.
+- **Still does not authorize merge to `main`, Release, OTA or Chrome Store publication without separate explicit user approval.**
+
+## Shark Git audit adoption rules
+
+Concepts adopted as product lessons, not copied implementation:
+- simple CODE/DATABASE/MIXED intent triage generalized into the Capability Router;
+- database Plan → Review → Run with destructive confirmation;
+- user-visible Project Understanding over the existing Context/State engines;
+- commit/revert expressed as understandable Change Transactions;
+- clear OAuth/project-selection UX;
+- attachments, voice and task cancellation where compatible with the existing safety model.
+
+Explicitly rejected:
+- remote storage of broad GitHub PATs as the default trust model;
+- hardware/WebGL fingerprinting as a security foundation;
+- restoring or wrapping the purged legacy UI;
+- obfuscation as a substitute for security;
+- gamification unrelated to engineering workflows;
+- any external agent/provider becoming authoritative writer.
 
 ## Release gate
 
-No build in this roadmap authorizes merge to `main`, OTA metadata, GitHub Release, store publication or production rollout. Release requires the final browser/provider homologation above and separate explicit user authorization.
+No build in this roadmap authorizes merge to `main`, OTA metadata, GitHub Release, Chrome Store publication or production rollout. Those actions require Build 114/115 acceptance plus separate explicit user authorization.
