@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.83",
+  "candidate":"2.6.84",
   "paths":[
     "manifest.json",
     "assets",
@@ -16,7 +16,9 @@
     "security",
     "updates",
     "content/content.js",
+    "content/integration-callback-bridge.js",
     "content/integration-readiness-client.js",
+    "content/canonical-integrations-client.js",
     "content/tool-runtime-client.js",
     "content/mcp-runtime-client.js",
     "content/mcp-marketplace-client.js",
@@ -46,5 +48,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build83 reattaches the preserved modern runtime stack exclusively through launcher/launcher-runtime.js plus launcher/canonical-runtime-wiring.js. No ui/ or diagnostic root is shipped. Only explicitly activated non-visual content clients are packaged. Background/core/local runtime/security/provider engines are active again behind their existing fail-closed authorization gates."
+  "notes":"Build84 adds a canonical, event-driven Integrations Center for GitHub App, Supabase OAuth, current Lovable project mappings and Gemini readiness. It preserves Build83 modern runtime wiring, ships no ui/ or diagnostic root, does not reactivate the old integrations overlay/polling, and retains existing fail-closed account/write authorization."
 }
