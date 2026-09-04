@@ -35,6 +35,16 @@
     return api;
   }
 
+  function changeTransactions() {
+    const api = window.LovableDecrypterCanonicalChangeTransactionsApi;
+    if (!api?.create || !api?.codeReview || !api?.codeResult || !api?.databaseResult || !api?.markError) {
+      const error = new Error('Change Transactions client não carregado.');
+      error.code = 'CHANGE_TRANSACTION_CLIENT_REQUIRED';
+      throw error;
+    }
+    return api;
+  }
+
   function attachmentApi() {
     return window.LovableDecrypterCanonicalAttachmentsVoiceApi || null;
   }
@@ -179,9 +189,10 @@
       throw error;
     }
 
+    let diff;
     if (normalized.tool === 'repo.patch_apply') {
       const preview = await tools().invokeRead('repo.patch_preview', normalized.input, { origin: 'user' });
-      return Object.freeze({
+      diff = Object.freeze({
         schema: 'ld-canonical-command-diff/1',
         tool: normalized.tool,
         digest: proposal.digest,
@@ -195,51 +206,55 @@
           preview: String(file?.preview || '').slice(0, 30000)
         }))
       });
-    }
-
-    if (normalized.tool !== 'repo.write_file') {
-      const error = new Error(`Ferramenta de escrita não suportada pelo preview canônico: ${normalized.tool}`);
-      error.code = 'COMPOSER_WRITE_TOOL_UNSUPPORTED';
-      throw error;
-    }
-
-    const input = normalized.input;
-    const action = String(input.action || 'update');
-    let before = '';
-    let beforeBlobSha = '';
-    if (action !== 'create') {
-      const current = await tools().invokeRead('repo.read_file', { path: input.path, branch: input.branch, maxBytes: 2000000 }, { origin: 'user' });
-      before = String(current?.data?.content || '');
-      beforeBlobSha = String(current?.data?.blobSha || '');
-      if (input.expectedBlobSha && beforeBlobSha && input.expectedBlobSha !== beforeBlobSha) {
-        const error = new Error(`A proposta ficou desatualizada antes da aprovação: ${input.path}`);
-        error.code = 'COMPOSER_PROPOSAL_STALE';
+    } else {
+      if (normalized.tool !== 'repo.write_file') {
+        const error = new Error(`Ferramenta de escrita não suportada pelo preview canônico: ${normalized.tool}`);
+        error.code = 'COMPOSER_WRITE_TOOL_UNSUPPORTED';
         throw error;
       }
+      const input = normalized.input;
+      const action = String(input.action || 'update');
+      let before = '';
+      let beforeBlobSha = '';
+      if (action !== 'create') {
+        const current = await tools().invokeRead('repo.read_file', { path: input.path, branch: input.branch, maxBytes: 2000000 }, { origin: 'user' });
+        before = String(current?.data?.content || '');
+        beforeBlobSha = String(current?.data?.blobSha || '');
+        if (input.expectedBlobSha && beforeBlobSha && input.expectedBlobSha !== beforeBlobSha) {
+          const error = new Error(`A proposta ficou desatualizada antes da aprovação: ${input.path}`);
+          error.code = 'COMPOSER_PROPOSAL_STALE';
+          throw error;
+        }
+      }
+      const after = action === 'delete' ? '' : String(input.content || '');
+      const computed = compactTextDiff(before, after);
+      diff = Object.freeze({
+        schema: 'ld-canonical-command-diff/1',
+        tool: normalized.tool,
+        digest: proposal.digest,
+        destructive: action === 'delete',
+        files: [Object.freeze({
+          path: String(input.path || ''),
+          action,
+          beforeBlobSha,
+          addedLines: computed.addedLines,
+          removedLines: computed.removedLines,
+          preview: computed.preview
+        })]
+      });
     }
-    const after = action === 'delete' ? '' : String(input.content || '');
-    const diff = compactTextDiff(before, after);
-    return Object.freeze({
-      schema: 'ld-canonical-command-diff/1',
-      tool: normalized.tool,
-      digest: proposal.digest,
-      destructive: action === 'delete',
-      files: [Object.freeze({
-        path: String(input.path || ''),
-        action,
-        beforeBlobSha,
-        addedLines: diff.addedLines,
-        removedLines: diff.removedLines,
-        preview: diff.preview
-      })]
-    });
+
+    if (result?.changeTransactionId) {
+      await changeTransactions().codeReview(result.changeTransactionId, diff).catch(() => null);
+    }
+    return diff;
   }
 
   async function databasePlan(command, capabilityRoute) {
     const sql = extractExplicitSql(command);
     const inspection = await database().introspect();
     const tableCount = Array.isArray(inspection?.schema) ? inspection.schema.length : 0;
-    return Object.freeze({
+    const base = Object.freeze({
       schema: SCHEMA,
       status: 'completed',
       capabilityRoute,
@@ -264,16 +279,43 @@
         writesPerformed: false
       })
     });
+    const tx = await changeTransactions().create({
+      command,
+      mode: 'plan',
+      status: 'completed',
+      capabilityRoute,
+      plan: base.plan,
+      database: { projectRef: base.database.projectRef, projectName: base.database.projectName, status: 'inspected' }
+    });
+    return Object.freeze({ ...base, changeTransactionId: tx.id });
   }
 
   async function databaseBuild(command, capabilityRoute) {
     const sql = requireExplicitSql(command);
     const inspection = await database().introspect();
     const prepared = await database().prepare(sql);
+    const tx = await changeTransactions().create({
+      command,
+      mode: 'build',
+      status: 'waiting_database_approval',
+      capabilityRoute,
+      plan: {
+        summary: 'Executar SQL explícito somente após revisão e aprovação humana.',
+        plan: ['Schema introspection', 'Risk classification', 'Human approval', 'Single execution', 'Verification when required'],
+        files: []
+      },
+      database: {
+        ticket: prepared.ticket,
+        classification: prepared.classification,
+        project: prepared.mappedProject || inspection.mappedProject || null,
+        status: prepared?.ticket?.status || 'prepared'
+      }
+    });
     return Object.freeze({
       schema: SCHEMA,
       status: 'waiting_database_approval',
       capabilityRoute,
+      changeTransactionId: tx.id,
       databaseProposal: Object.freeze({
         ticket: prepared.ticket,
         classification: prepared.classification,
@@ -300,7 +342,15 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
-    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [] });
+    const tx = await changeTransactions().create({
+      command,
+      mode: 'plan',
+      status: result?.status || 'completed',
+      capabilityRoute,
+      plan: result?.plan || {},
+      taskId: result?.run?.taskId || ''
+    });
+    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [], changeTransactionId: tx.id });
   }
 
   async function build(command, options = {}) {
@@ -325,7 +375,15 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
-    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [] });
+    const tx = await changeTransactions().create({
+      command,
+      mode: 'build',
+      status: result?.status || 'running',
+      capabilityRoute,
+      plan: result?.plan || {},
+      taskId: result?.run?.taskId || ''
+    });
+    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [], changeTransactionId: tx.id });
   }
 
   async function approveWrite(taskId, proposalDigest, options = {}) {
@@ -334,10 +392,17 @@
       error.code = 'COMPOSER_HUMAN_APPROVAL_REQUIRED';
       throw error;
     }
-    return agent().approveWrite(String(taskId || ''), String(proposalDigest || ''), {
-      humanIntentOverrides: Array.isArray(options.humanIntentOverrides) ? options.humanIntentOverrides : [],
-      timeoutMs: options.timeoutMs || 600000
-    });
+    try {
+      const result = await agent().approveWrite(String(taskId || ''), String(proposalDigest || ''), {
+        humanIntentOverrides: Array.isArray(options.humanIntentOverrides) ? options.humanIntentOverrides : [],
+        timeoutMs: options.timeoutMs || 600000
+      });
+      if (options.changeTransactionId) await changeTransactions().codeResult(options.changeTransactionId, result).catch(() => null);
+      return result;
+    } catch (error) {
+      if (options.changeTransactionId) await changeTransactions().markError(options.changeTransactionId, error);
+      throw error;
+    }
   }
 
   async function approveDatabase(ticketId, sql, options = {}) {
@@ -346,13 +411,32 @@
       error.code = 'DATABASE_HUMAN_APPROVAL_REQUIRED';
       throw error;
     }
-    const approved = await database().approve(ticketId, {
-      humanDecision: true,
-      destructiveConfirmation: options.destructiveConfirmation === true,
-      recoveryEvidence: options.recoveryEvidence || ''
-    });
-    const executed = await database().run(ticketId, sql);
-    return Object.freeze({ ...executed, approvedTicket: approved.ticket || null });
+    try {
+      const approved = await database().approve(ticketId, {
+        humanDecision: true,
+        destructiveConfirmation: options.destructiveConfirmation === true,
+        recoveryEvidence: options.recoveryEvidence || ''
+      });
+      if (options.changeTransactionId) {
+        await changeTransactions().databaseResult(options.changeTransactionId, { ticket: approved.ticket || null, status: approved?.ticket?.status || 'approved' }).catch(() => null);
+      }
+      const executed = await database().run(ticketId, sql);
+      if (options.changeTransactionId) {
+        await changeTransactions().databaseResult(options.changeTransactionId, { ticket: executed.ticket || approved.ticket || null, status: executed?.ticket?.status || 'applied' }, { status: executed?.ticket?.status || 'completed' }).catch(() => null);
+      }
+      return Object.freeze({ ...executed, approvedTicket: approved.ticket || null });
+    } catch (error) {
+      if (options.changeTransactionId) await changeTransactions().markError(options.changeTransactionId, error);
+      throw error;
+    }
+  }
+
+  async function verifyDatabase(ticketId, options = {}) {
+    const result = await database().verify(ticketId);
+    if (options.changeTransactionId) {
+      await changeTransactions().databaseResult(options.changeTransactionId, { ticketId, status: 'verified', verificationRequired: false }, { status: 'verified' }).catch(() => null);
+    }
+    return result;
   }
 
   window.LovableDecrypterCanonicalCommandComposerApi = Object.freeze({
@@ -365,7 +449,7 @@
     previewProposal,
     approveWrite,
     approveDatabase,
-    verifyDatabase: ticketId => database().verify(ticketId),
+    verifyDatabase,
     databaseIntrospect: () => database().introspect(),
     cancelTask: taskId => agent().cancel(String(taskId || '')),
     task: taskId => agent().get(String(taskId || '')),
@@ -379,6 +463,8 @@
     databaseAutomaticRetry: false,
     capabilityCandidatesAutoActivated: false,
     capabilityRouteRequiredBeforeBuild: true,
+    changeTransactionsEnabled: true,
+    changeTransactionProjectionOnly: true,
     localFirst: true,
     paidFallbackAllowed: false,
     remoteFallbackAllowed: false,
