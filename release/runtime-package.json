@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.92",
+  "candidate":"2.6.93",
   "paths":[
     "manifest.json",
     "assets",
@@ -37,11 +37,12 @@
     "content/native-agent-session-client.js",
     "content/canonical-agent-center-client.js",
     "content/canonical-activity-audit-client.js",
+    "content/canonical-attachments-voice-client.js",
     "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build92 restores one canonical local-first Command Composer with PLAN and BUILD modes. PLAN delegates to the Local Agent in no-write plan mode. BUILD permits automatic read tools but stops at waiting_approval for every write proposal. The canonical client generates a read-only diff preview through repo.patch_preview or repo.read_file, rejects stale write_file proposals, and approval requires an explicit UI action bound to taskId + proposalDigest. Cancellation is exposed once a task handle exists. No LD2_BUILD_EXECUTE/LD2_PLAN_APPLY legacy shortcut, no direct Tool Runtime write, no automatic approval and no legacy chat are activated. Attachments remain disabled until Build93."
+  "notes":"Build93 adds bounded attachments and user-initiated voice dictation to the canonical Command Composer. Limits remain 8 attachments, 15 MB each and 40 MB total. Text files are decoded locally and injected only within a capped command-context budget; image, PDF and audio payloads remain reference-only until a runtime explicitly supports the modality. Raw binary is not durably persisted, binary is never base64-injected into the local text prompt, and no remote upload is performed. SpeechRecognition only fills the command textarea after direct user interaction and never triggers execution or approval. Build92 proposalDigest approval, Scope Intelligence, Human Intent, Continuity and Tool Runtime write gates remain unchanged."
 }
