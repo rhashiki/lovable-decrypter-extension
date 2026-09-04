@@ -43,6 +43,7 @@
     checkpoint: async () => window.LovableDecrypterCanonicalContinuityRecoveryApi?.snapshot ? safe('continuity-recovery', () => window.LovableDecrypterCanonicalContinuityRecoveryApi.snapshot()) : asError('Canonical Continuity + Recovery client não carregado.'),
     'runtime-events': async () => window.LovableDecrypterCanonicalActivityAuditApi?.snapshot ? safe('activity-audit', () => window.LovableDecrypterCanonicalActivityAuditApi.snapshot()) : asError('Canonical Activity + Audit client não carregado.'),
     operations: async () => window.LovableDecrypterCanonicalActivityAuditApi?.snapshot ? safe('activity-audit', () => window.LovableDecrypterCanonicalActivityAuditApi.snapshot()) : asError('Canonical Activity + Audit client não carregado.'),
+    'capability-router': async () => window.LovableDecrypterCapabilityRouter?.status ? safe('capability-router', () => window.LovableDecrypterCapabilityRouter.status()) : asError('Capability Router client não carregado.'),
     security: async () => serviceWorkerStatus(),
     updates: async () => serviceWorkerStatus(),
     account: async () => integrationStatus(),
@@ -68,7 +69,7 @@
         reversible:Boolean(window.LovableDecrypterReversibleOperations), continuity:Boolean(window.LovableDecrypterContinuity),
         canonicalRecovery:Boolean(window.LovableDecrypterCanonicalContinuityRecoveryApi), canonicalAudit:Boolean(window.LovableDecrypterCanonicalActivityAuditApi),
         localAgent:Boolean(window.LovableDecrypterLocalAgent), canonicalAgent:Boolean(window.LovableDecrypterCanonicalAgentApi),
-        canonicalComposer:Boolean(window.LovableDecrypterCanonicalCommandComposerApi),
+        canonicalComposer:Boolean(window.LovableDecrypterCanonicalCommandComposerApi), capabilityRouter:Boolean(window.LovableDecrypterCapabilityRouter),
         integrationGate:Boolean(window.LovableDecrypterAccountIntegrationGate), projectState:Boolean(window.LovableDecrypterCanonicalProjectStateApi),
         runtimeRegistry:Boolean(window.LovableDecrypterAgentRuntimeRegistryClient), portableSkills:Boolean(window.LovableDecrypterPortableSkills),
         sandbox:Boolean(window.LovableDecrypterAgentSandbox), nativeSessions:Boolean(window.LovableDecrypterNativeAgentSessions)
@@ -101,7 +102,8 @@
       window.LovableDecrypterCanonicalAgentCenter?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalContinuityRecovery?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalActivityAudit?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalCommandComposer?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalCommandComposer?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalCapabilityRouter?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
