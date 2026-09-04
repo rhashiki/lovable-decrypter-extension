@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.85",
+  "candidate":"2.6.86",
   "paths":[
     "manifest.json",
     "assets",
@@ -21,6 +21,7 @@
     "content/canonical-integrations-client.js",
     "content/canonical-project-state-client.js",
     "content/tool-runtime-client.js",
+    "content/canonical-tool-runtime-client.js",
     "content/mcp-runtime-client.js",
     "content/mcp-marketplace-client.js",
     "content/context-engine-client.js",
@@ -49,5 +50,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build85 adds an on-demand canonical Project State snapshot that reconciles current Lovable project identity, secure GitHub mapping with branch/HEAD reachability and Supabase OAuth project inspection. No legacy project UI or 30-second content polling is reactivated."
+  "notes":"Build86 exposes the real Tool Runtime registry and Operation Journal through the canonical launcher, plus a read-only repo.list_files smoke invocation. Direct canonical UI writes are intentionally blocked; write tools remain available only through validated approval transactions with Scope Intelligence and Continuity/idempotency gates."
 }
