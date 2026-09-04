@@ -1,12 +1,13 @@
 (() => {
   'use strict';
 
-  if (window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__) return;
-  window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__ = true;
+  if (window.__LD95_CANONICAL_COMMAND_COMPOSER_CLIENT__) return;
+  window.__LD95_CANONICAL_COMMAND_COMPOSER_CLIENT__ = true;
 
-  const BUILD = 94;
+  const BUILD = 95;
   const SCHEMA = 'ld-canonical-command-composer/1';
-  const BUILD_EXECUTABLE_CAPABILITIES = Object.freeze(['CODE','CONTEXT','TEST']);
+  const AGENT_BUILD_CAPABILITIES = Object.freeze(['CODE','CONTEXT','TEST']);
+  const BUILD_EXECUTABLE_CAPABILITIES = Object.freeze(['CODE','CONTEXT','TEST','DATABASE']);
 
   function projectId() {
     return String(window.LovableDecrypterV2?.getProjectId?.() || '');
@@ -21,6 +22,16 @@
   function tools() {
     const api = window.LovableDecrypterCanonicalToolsApi;
     if (!api?.invokeRead) throw new Error('Canonical Tool Runtime client não carregado.');
+    return api;
+  }
+
+  function database() {
+    const api = window.LovableDecrypterCanonicalDatabaseRuntimeApi;
+    if (!api?.prepare || !api?.approve || !api?.run || !api?.verify || !api?.introspect) {
+      const error = new Error('Canonical Database Runtime client não carregado.');
+      error.code = 'DATABASE_RUNTIME_CLIENT_REQUIRED';
+      throw error;
+    }
     return api;
   }
 
@@ -68,24 +79,61 @@
     return capabilityRouter().route(value, { attachments: attachmentManifest() });
   }
 
-  function assertBuildCapabilities(report = {}) {
+  function requiredCapabilities(report = {}) {
+    return (Array.isArray(report?.requiredCapabilities) ? report.requiredCapabilities : [])
+      .map(id => String(id || '').toUpperCase())
+      .filter(Boolean);
+  }
+
+  function assertResolved(report = {}) {
     if (!report?.resolved) {
       const error = new Error('O pedido não possui capacidade explícita suficiente para BUILD. Revise o pedido ou use PLAN para explorar sem escrita.');
       error.code = 'CAPABILITY_ROUTE_UNRESOLVED';
       error.capabilityRoute = report;
       throw error;
     }
-    const allowed = new Set(BUILD_EXECUTABLE_CAPABILITIES);
-    const required = Array.isArray(report?.requiredCapabilities) ? report.requiredCapabilities : [];
-    const unsupported = required.filter(id => !allowed.has(String(id || '').toUpperCase()));
+    return report;
+  }
+
+  function assertAgentBuildCapabilities(report = {}) {
+    assertResolved(report);
+    const allowed = new Set(AGENT_BUILD_CAPABILITIES);
+    const unsupported = requiredCapabilities(report).filter(id => !allowed.has(id));
     if (unsupported.length) {
-      const error = new Error(`BUILD ainda não possui execução canônica para: ${unsupported.join(', ')}.`);
+      const error = new Error(`BUILD do agente não possui execução canônica para: ${unsupported.join(', ')}.`);
       error.code = 'CAPABILITY_EXECUTION_NOT_AVAILABLE';
       error.capabilities = unsupported;
       error.capabilityRoute = report;
       throw error;
     }
     return report;
+  }
+
+  function databaseOnly(report = {}) {
+    const required = requiredCapabilities(report);
+    return required.length === 1 && required[0] === 'DATABASE';
+  }
+
+  function containsDatabase(report = {}) {
+    return requiredCapabilities(report).includes('DATABASE');
+  }
+
+  function extractExplicitSql(command) {
+    const value = ensureCommand(command);
+    const fenced = value.match(/```sql\s*([\s\S]*?)```/i);
+    if (fenced?.[1]?.trim()) return fenced[1].trim();
+    const labeled = value.match(/^\s*SQL\s*:\s*([\s\S]+)$/i);
+    if (labeled?.[1]?.trim()) return labeled[1].trim();
+    if (/^\s*(?:with\b[\s\S]*\b(?:select|insert|update|delete)\b|select\b|insert\b|update\b|delete\b|create\b|alter\b|drop\b|truncate\b|grant\b|revoke\b|comment\b|do\b|explain\b|show\b)/i.test(value)) return value;
+    return '';
+  }
+
+  function requireExplicitSql(command) {
+    const sql = extractExplicitSql(command);
+    if (sql) return sql;
+    const error = new Error('DATABASE exige SQL explícito nesta build. Inclua um bloco ```sql ... ``` ou use o prefixo SQL:. PLAN continua disponível para explorar o pedido sem escrita.');
+    error.code = 'DATABASE_SQL_PLAN_REQUIRED';
+    throw error;
   }
 
   async function prepareCommand(command) {
@@ -187,8 +235,62 @@
     });
   }
 
+  async function databasePlan(command, capabilityRoute) {
+    const sql = extractExplicitSql(command);
+    const inspection = await database().introspect();
+    const tableCount = Array.isArray(inspection?.schema) ? inspection.schema.length : 0;
+    return Object.freeze({
+      schema: SCHEMA,
+      status: 'completed',
+      capabilityRoute,
+      plan: Object.freeze({
+        summary: sql ? 'Revisar SQL explícito contra o schema Supabase antes de qualquer escrita.' : 'Inspecionar o schema Supabase e produzir SQL explícito antes de qualquer escrita.',
+        plan: Object.freeze([
+          `Projeto Supabase mapeado: ${inspection?.mappedProject?.projectName || inspection?.mappedProject?.projectRef || 'projeto atual'}`,
+          `Schema inspecionado por consulta fixa: ${tableCount} registro(s) de metadados`,
+          sql ? 'SQL explícito detectado; BUILD poderá preparar um ticket sem executar.' : 'Nenhum SQL explícito detectado; BUILD permanecerá bloqueado.',
+          'Classificar risco no backend e revisar RLS/grants/Data API.',
+          'Aprovar humanamente o ticket exato; operações destrutivas também exigem evidência de recuperação.',
+          'Executar uma única vez e verificar o estado; nunca repetir automaticamente um write ambíguo.'
+        ]),
+        files: Object.freeze([])
+      }),
+      database: Object.freeze({
+        projectRef: String(inspection?.mappedProject?.projectRef || ''),
+        projectName: String(inspection?.mappedProject?.projectName || ''),
+        schema: inspection?.schema || [],
+        explicitSql: sql,
+        explicitSqlRequiredForBuild: !sql,
+        writesPerformed: false
+      })
+    });
+  }
+
+  async function databaseBuild(command, capabilityRoute) {
+    const sql = requireExplicitSql(command);
+    const inspection = await database().introspect();
+    const prepared = await database().prepare(sql);
+    return Object.freeze({
+      schema: SCHEMA,
+      status: 'waiting_database_approval',
+      capabilityRoute,
+      databaseProposal: Object.freeze({
+        ticket: prepared.ticket,
+        classification: prepared.classification,
+        project: prepared.mappedProject || inspection.mappedProject || null,
+        sql,
+        schema: inspection?.schema || [],
+        writesPerformed: false,
+        approvalRequired: true,
+        automaticRetry: false
+      })
+    });
+  }
+
   async function plan(command, options = {}) {
     const capabilityRoute = await routeCommand(command);
+    if (databaseOnly(capabilityRoute)) return databasePlan(command, capabilityRoute);
+
     const prepared = await prepareCommand(command);
     const result = await agent().start(prepared.command, {
       projectId: projectId(),
@@ -202,7 +304,18 @@
   }
 
   async function build(command, options = {}) {
-    const capabilityRoute = assertBuildCapabilities(await routeCommand(command));
+    const capabilityRoute = assertResolved(await routeCommand(command));
+    if (containsDatabase(capabilityRoute)) {
+      if (!databaseOnly(capabilityRoute)) {
+        const error = new Error('Build 95 não executa CODE + DATABASE como se fossem uma transação atômica. Separe as mudanças ou use PLAN.');
+        error.code = 'DATABASE_MIXED_TRANSACTION_NOT_AVAILABLE';
+        error.capabilityRoute = capabilityRoute;
+        throw error;
+      }
+      return databaseBuild(command, capabilityRoute);
+    }
+
+    assertAgentBuildCapabilities(capabilityRoute);
     const prepared = await prepareCommand(command);
     const result = await agent().start(prepared.command, {
       projectId: projectId(),
@@ -227,6 +340,21 @@
     });
   }
 
+  async function approveDatabase(ticketId, sql, options = {}) {
+    if (options.humanDecision !== true) {
+      const error = new Error('Aprovação humana explícita é obrigatória para banco.');
+      error.code = 'DATABASE_HUMAN_APPROVAL_REQUIRED';
+      throw error;
+    }
+    const approved = await database().approve(ticketId, {
+      humanDecision: true,
+      destructiveConfirmation: options.destructiveConfirmation === true,
+      recoveryEvidence: options.recoveryEvidence || ''
+    });
+    const executed = await database().run(ticketId, sql);
+    return Object.freeze({ ...executed, approvedTicket: approved.ticket || null });
+  }
+
   window.LovableDecrypterCanonicalCommandComposerApi = Object.freeze({
     build: BUILD,
     schema: SCHEMA,
@@ -236,11 +364,19 @@
     routeCommand,
     previewProposal,
     approveWrite,
+    approveDatabase,
+    verifyDatabase: ticketId => database().verify(ticketId),
+    databaseIntrospect: () => database().introspect(),
     cancelTask: taskId => agent().cancel(String(taskId || '')),
     task: taskId => agent().get(String(taskId || '')),
     attachmentSnapshot: () => attachmentApi()?.snapshot?.() || null,
     clearAttachments: () => attachmentApi()?.clear?.() || null,
     buildExecutableCapabilities: BUILD_EXECUTABLE_CAPABILITIES,
+    agentBuildCapabilities: AGENT_BUILD_CAPABILITIES,
+    databaseRequiresExplicitSql: true,
+    databaseMixedAtomicExecution: false,
+    databaseTicketedWrites: true,
+    databaseAutomaticRetry: false,
     capabilityCandidatesAutoActivated: false,
     capabilityRouteRequiredBeforeBuild: true,
     localFirst: true,
