@@ -40,10 +40,10 @@ jobs:
 
       - name: Security invariants
         run: |
-          grep -q "authMode: 'oauth'" settings/config.js
+          grep -Eq "authMode:[[:space:]]*'oauth'" settings/config.js
           grep -q "github_app" github/git-adapter.js
           grep -q "sanitizeState" background/project-state-runtime.js
-          grep -q "service[_-]?role" background/project-state-runtime.js
+          grep -Eq "service\[_-\]\?role|service_role|service-role" background/project-state-runtime.js
 
       - name: Local runtime syntax remains green
         run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
