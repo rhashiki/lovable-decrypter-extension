@@ -1,0 +1,60 @@
+name: v2.6 Build 90 · Canonical Continuity + Recovery
+
+on:
+  push:
+    branches: [v2.6.90-canonical-continuity-recovery]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-continuity-recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical recovery surface
+        run: |
+          node --check launcher/canonical-continuity-recovery.js
+          node --check content/canonical-continuity-recovery-client.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · continuity and reversal authorities
+        run: |
+          node --check background/continuity-runtime.js
+          node --check core/continuity-engine.js
+          node --check background/reversible-operations-runtime.js
+          node --check content/reversible-operations-client.js
+          node --check settings/config.js
+
+      - name: Build90 canonical continuity recovery contract
+        run: node tests/build90-canonical-continuity-recovery.test.mjs
+
+      - name: Ambiguous writes remain fail closed
+        run: |
+          grep -q "writeRetryRequiresVerification: true" background/continuity-runtime.js
+          grep -q "CONTINUITY_VERIFICATION_REQUIRED_BEFORE_RESUME" core/continuity-engine.js
+          grep -q "git-head-before-write" background/continuity-runtime.js
+          grep -q "verified-no-write-safe-to-retry" background/continuity-runtime.js
+          ! grep -n "retryWriteWithoutVerification:" content/canonical-continuity-recovery-client.js | grep -v "undefined"
+
+      - name: Reversal requires preview and human confirmation
+        run: |
+          grep -q "humanDecision: true" content/reversible-operations-client.js
+          grep -q "REVERSAL_HUMAN_CONFIRMATION_REQUIRED" background/reversible-operations-runtime.js
+          grep -q "REVERSAL_DESTRUCTIVE_CONFIRMATION_REQUIRED" background/reversible-operations-runtime.js
+          grep -q "strategy: 'preserve'" content/canonical-continuity-recovery-client.js
+          ! grep -n "strategy: 'cascade'" launcher/canonical-continuity-recovery.js content/canonical-continuity-recovery-client.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "innerHTML" launcher/canonical-continuity-recovery.js
+          ! grep -n "setInterval(" launcher/canonical-continuity-recovery.js content/canonical-continuity-recovery-client.js
+          ! grep -n "MutationObserver" launcher/canonical-continuity-recovery.js content/canonical-continuity-recovery-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-continuity-recovery.js content/canonical-continuity-recovery-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
