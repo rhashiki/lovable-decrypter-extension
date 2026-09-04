@@ -1,0 +1,91 @@
+name: v2.6 Build 95 · Safe Database Plan Review Run
+
+on:
+  push:
+    branches: [v2.6.95-safe-database-plan-review-run]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safe-database-plan-review-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build95 browser surface
+        run: |
+          node --check background/database-runtime.js
+          node --check content/canonical-database-runtime-client.js
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-command-composer.js
+          node --check background/service-worker-entry.js
+
+      - name: Build95 executable contract
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Ticket persistence never stores raw SQL
+        run: |
+          grep -q "sql_hash text not null" supabase/migrations/20260904193000_build95_database_write_tickets.sql
+          ! grep -n -E '^[[:space:]]*sql[[:space:]]+text\b' supabase/migrations/20260904193000_build95_database_write_tickets.sql
+          grep -q "raw_sql_persisted: false" supabase/functions/ld-database-runtime/index.ts
+          grep -q "raw_sql_persistence: false" supabase/functions/ld-database-runtime/index.ts
+          ! grep -n "chrome.storage" background/database-runtime.js content/canonical-database-runtime-client.js
+
+      - name: Destructive writes are doubly gated
+        run: |
+          grep -q 'body.human_decision !== true' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'body.destructive_confirmation !== true || evidence.length < 8' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'DATABASE_DESTRUCTIVE_RECOVERY_REQUIRED' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'destructiveRequiresRecoveryEvidence: true' content/canonical-database-runtime-client.js
+          grep -q 'dbDestructiveConfirmed' launcher/canonical-command-composer.js
+          grep -q 'dbRecoveryEvidence' launcher/canonical-command-composer.js
+
+      - name: Write ticket is exact, one-shot and fail-closed
+        run: |
+          grep -q 'DATABASE_TICKET_SQL_MISMATCH' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'status: "running"' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'eq("status", "approved")' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'DATABASE_TICKET_CONSUME_RACE' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'DATABASE_WRITE_OUTCOME_AMBIGUOUS' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'verification_only: true, automatic_retry: false' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'automaticWriteRetry: false' content/canonical-database-runtime-client.js
+          grep -q 'databaseAutomaticRetry: false' content/canonical-command-composer-client.js
+
+      - name: OAuth mapping and scope remain authoritative
+        run: |
+          grep -q 'requireScope(session.scope, "database:write")' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'authorizedProject(session.accessToken, ref)' supabase/functions/ld-database-runtime/index.ts
+          grep -q 'projectRefFromCanonicalMapping: true' content/canonical-database-runtime-client.js
+          grep -q "snapshot?.mappings?.supabase?.projectRef" content/canonical-database-runtime-client.js
+          ! grep -n -E 'service[_-]?role|SUPABASE_SERVICE_ROLE_KEY|sbp_' background/database-runtime.js content/canonical-database-runtime-client.js launcher/canonical-command-composer.js
+
+      - name: Composer isolates database execution
+        run: |
+          grep -q "AGENT_BUILD_CAPABILITIES = Object.freeze(\['CODE','CONTEXT','TEST'\])" content/canonical-command-composer-client.js
+          grep -q "BUILD_EXECUTABLE_CAPABILITIES = Object.freeze(\['CODE','CONTEXT','TEST','DATABASE'\])" content/canonical-command-composer-client.js
+          grep -q 'DATABASE_MIXED_TRANSACTION_NOT_AVAILABLE' content/canonical-command-composer-client.js
+          grep -q 'DATABASE_SQL_PLAN_REQUIRED' content/canonical-command-composer-client.js
+          grep -q 'waiting_database_approval' content/canonical-command-composer-client.js launcher/canonical-command-composer.js
+          grep -q 'capabilityCandidatesAutoActivated: false' content/canonical-command-composer-client.js
+
+      - name: Manifest is Build95 and load order is safe
+        run: |
+          grep -q '"version": "2.6.95"' manifest.json
+          grep -q 'Safe Database Plan Review Run' manifest.json
+          node - <<'NODE'
+          const m = require('./manifest.json');
+          const js = m.content_scripts.flatMap(x => x.js || []);
+          const db = js.indexOf('content/canonical-database-runtime-client.js');
+          const composer = js.indexOf('content/canonical-command-composer-client.js');
+          if (db < 0 || composer < 0 || db >= composer) process.exit(1);
+          NODE
+
+      - name: Legacy polling remains absent from Build95 surface
+        run: |
+          ! grep -n "setInterval(" background/database-runtime.js content/canonical-database-runtime-client.js content/canonical-command-composer-client.js launcher/canonical-command-composer.js
+          ! grep -n "MutationObserver" background/database-runtime.js content/canonical-database-runtime-client.js content/canonical-command-composer-client.js launcher/canonical-command-composer.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
