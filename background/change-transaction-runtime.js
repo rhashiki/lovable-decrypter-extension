@@ -88,6 +88,7 @@ function continuityProjection(task = {}) {
 function deriveStatus(tx, operations, continuity) {
   if (tx?.recovery?.status === 'applied') return 'reverted';
   if (tx?.database?.verificationRequired) return 'verification_required';
+  if (tx?.database?.status === 'verified') return 'verified';
   if (tx?.database?.status === 'applied') return 'completed';
   if (tx?.database?.status === 'approved') return 'approved';
   if (tx?.database?.ticketId && tx?.status === 'waiting_database_approval') return 'waiting_approval';
@@ -103,10 +104,23 @@ function deterministicExplanation(tx, view) {
   if (tx?.plan?.summary) parts.push(text(tx.plan.summary, 400));
   if (tx?.review?.files?.length) parts.push(`${tx.review.files.length} arquivo(s) na revisão`);
   if (tx?.database?.ticketId) parts.push(`database ${tx.database.risk || 'risk unknown'} · ${tx.database.status || 'prepared'}`);
+  if (view?.tests?.length) parts.push(`${view.tests.length} validação(ões)`);
   if (view?.commit?.sha) parts.push(`commit ${view.commit.sha.slice(0, 10)}`);
   if (view?.continuity?.verificationRequired) parts.push('write ambíguo exige verificação');
   if (tx?.recovery?.status) parts.push(`recovery ${tx.recovery.status}`);
   return parts.join(' · ').slice(0, 1600);
+}
+
+async function resolveTransactionId({ transactionId = '', taskId = '', ticketId = '' } = {}) {
+  const direct = text(transactionId, 180);
+  if (direct) return direct;
+  const task = text(taskId, 180);
+  const ticket = text(ticketId, 180);
+  if (!task && !ticket) throw Object.assign(new Error('CHANGE_TRANSACTION_LINK_REQUIRED'), { code: 'CHANGE_TRANSACTION_LINK_REQUIRED' });
+  const rows = await listChangeTransactions({ limit: 160 });
+  const match = rows.find(row => (task && row?.links?.taskId === task) || (ticket && row?.database?.ticketId === ticket));
+  if (!match?.id) throw Object.assign(new Error('CHANGE_TRANSACTION_NOT_FOUND_BY_LINK'), { code: 'CHANGE_TRANSACTION_NOT_FOUND_BY_LINK' });
+  return match.id;
 }
 
 async function reviewTransaction(txId) {
@@ -184,32 +198,32 @@ async function handle(action, payload = {}) {
     }) };
   }
   if (op === 'code_review') {
-    const tx = await patchChangeTransaction(payload?.transactionId, {
-      status: 'waiting_approval',
-      review: safeDiff(payload?.diff || {})
-    });
+    const txId = await resolveTransactionId({ transactionId: payload?.transactionId, taskId: payload?.taskId });
+    const tx = await patchChangeTransaction(txId, { status: 'waiting_approval', review: safeDiff(payload?.diff || {}) });
     return { transaction: tx };
   }
   if (op === 'code_result') {
-    const tx = await patchChangeTransaction(payload?.transactionId, {
+    const taskId = text(payload?.taskId, 180);
+    const txId = await resolveTransactionId({ transactionId: payload?.transactionId, taskId });
+    const tx = await patchChangeTransaction(txId, {
       status: text(payload?.status || 'running', 80),
-      links: { taskId: text(payload?.taskId, 180), approvalTransactionIds: unique(payload?.approvalTransactionIds || []) }
+      links: { taskId, approvalTransactionIds: unique(payload?.approvalTransactionIds || []) }
     });
     return { transaction: tx, review: await reviewTransaction(tx.id) };
   }
   if (op === 'database_result') {
     const database = payload?.database || {};
-    const tx = await patchChangeTransaction(payload?.transactionId, {
+    const ticketId = text(database?.ticketId || database?.ticket?.id || payload?.ticketId, 180);
+    const txId = await resolveTransactionId({ transactionId: payload?.transactionId, ticketId });
+    const tx = await patchChangeTransaction(txId, {
       status: text(payload?.status || database?.status || 'running', 80),
-      database: {
-        ...database,
-        verificationRequired: payload?.verificationRequired === true || database?.verificationRequired === true
-      }
+      database: { ...database, ticketId, verificationRequired: payload?.verificationRequired === true || database?.verificationRequired === true }
     });
     return { transaction: tx, review: await reviewTransaction(tx.id) };
   }
   if (op === 'error') {
-    const tx = await patchChangeTransaction(payload?.transactionId, {
+    const txId = await resolveTransactionId({ transactionId: payload?.transactionId, taskId: payload?.taskId, ticketId: payload?.ticketId });
+    const tx = await patchChangeTransaction(txId, {
       status: payload?.verificationRequired === true ? 'verification_required' : 'failed',
       lastError: { code: text(payload?.code, 180), message: text(payload?.message, 900) },
       database: payload?.verificationRequired === true ? { verificationRequired: true } : {}
@@ -217,7 +231,8 @@ async function handle(action, payload = {}) {
     return { transaction: tx };
   }
   if (op === 'recovery_result') {
-    const tx = await patchChangeTransaction(payload?.transactionId, {
+    const txId = await resolveTransactionId({ transactionId: payload?.transactionId });
+    const tx = await patchChangeTransaction(txId, {
       status: text(payload?.status || 'reverted', 80),
       recovery: {
         status: text(payload?.status === 'completed' ? 'applied' : payload?.status, 80),
