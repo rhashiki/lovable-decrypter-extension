@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 89 — Canonical Agent Center**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→88 have now reattached the preserved modern engines to the single canonical launcher with dedicated CI gates.
+Current engineering baseline: **Build 92 — Canonical Command Composer**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→92 have now reattached the preserved modern engines to the single canonical launcher with dedicated CI gates. Build 93 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -130,23 +130,29 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 - Provenance, publisher/domain, trust, host permission, tool discovery and local policy are visible.
 - Unknown tools default deny; canonical enablement is READ-only; MCP writes retain exact-call one-time human approval.
 
-### Build 89 — Canonical Agent Center 🚧 CURRENT
-- Wire Local Agent Orchestrator, Runtime Registry, Portable Skills, Sandbox and Native Sessions into one canonical agent surface.
-- Keep all external runtimes proposal-only.
-- Agent Center is management/observability only; command execution remains scheduled for Build 92.
+### Build 89 — Canonical Agent Center ✅
+- Local Agent Orchestrator, Runtime Registry, Portable Skills, Sandbox and Native Sessions are exposed through one canonical control surface.
+- External runtimes remain proposal-only and credentials remain session-only.
+- Agent Center is management/observability only; it cannot execute or approve commands.
 
-### Build 90 — Canonical Continuity + Recovery
-- Surface Continuity tasks, checkpoints, Smart Undo/Redo and Recovery Doctor from the canonical UI.
-- Add pause/resume/retry only where idempotency and verification allow it.
+### Build 90 — Canonical Continuity + Recovery ✅
+- Continuity tasks, checkpoints and Smart Undo/Redo are unified under the canonical launcher.
+- Recovery Doctor behavior is reconstructed canonically from Continuity + Operation Journal + checkpoints instead of restoring legacy UI.
+- Ambiguous writes require verification before resume/retry; Smart Undo/Redo is Preview → explicit confirmation with `preserve` default and no exposed cascade path.
 
-### Build 91 — Canonical Activity + Audit
-- Consolidate Operation Journal, runtime events, approvals, commits and recovery events into a chronological audit surface.
+### Build 91 — Canonical Activity + Audit ✅
+- Operation Journal, approval history, Continuity events, commits/reversals and Local Agent run metadata are normalized into one chronological read-only timeline.
+- Raw prompts, raw model output, raw file contents and credentials are omitted from the audit surface.
+- Legacy Activity UI and polling remain absent.
 
-### Build 92 — Canonical Command Composer
-- Restore a single modern command surface for Plan/Build using the preserved authoritative backend.
-- Attach progress, cancellation, diff review and approval without reviving extension-owned legacy chat.
+### Build 92 — Canonical Command Composer ✅
+- One canonical command surface now provides PLAN and BUILD modes without reviving legacy chat.
+- PLAN uses the Local Agent in no-write mode.
+- BUILD allows automatic READ tools but stops at `waiting_approval` before every write proposal.
+- Each write receives a read-only stale-aware diff preview and requires explicit `taskId + proposalDigest + humanDecision` approval.
+- No `LD2_BUILD_EXECUTE`, `LD2_PLAN_APPLY`, direct Tool Runtime write or automatic approval path is exposed.
 
-### Build 93 — Attachments + Voice Input
+### Build 93 — Attachments + Voice Input 🚧 CURRENT
 - Attach images/documents/audio to commands using existing backend limits and validation.
 - Add browser-safe voice dictation as an input convenience, never as autonomous execution authority.
 
