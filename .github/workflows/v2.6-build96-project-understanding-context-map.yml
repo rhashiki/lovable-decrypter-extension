@@ -38,6 +38,7 @@ jobs:
           grep -q 'rawSourceExposed: false' content/canonical-project-understanding-client.js
           grep -q 'rawSourcePersistedInMap: false' core/project-understanding-map.js
           ! grep -n -E '(^|[,{])[[:space:]]*content[[:space:]]*:' content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+          ! grep -n 'innerHTML' launcher/canonical-project-understanding.js
 
       - name: Static evidence and confidence are explicit
         run: |
@@ -54,6 +55,7 @@ jobs:
           grep -q 'MAX_TOTAL_SOURCE_CHARS = 3_000_000' background/project-understanding-runtime.js
           grep -q 'SENSITIVE_PATH' core/project-understanding-map.js background/project-understanding-runtime.js
           grep -q 'PROJECT_MAP_TARGET_INVALID' background/project-understanding-runtime.js
+          grep -q 'removedNodeIds' launcher/canonical-project-understanding.js
 
       - name: Legacy graph concepts are reused without legacy UI activation
         run: |
@@ -82,6 +84,8 @@ jobs:
           NODE
 
       - name: Build95 safety contract remains green
+        env:
+          LD_SUCCESSOR_REGRESSION: '1'
         run: node tests/build95-safe-database-plan-review-run.test.mjs
 
       - name: Local runtime syntax remains green
