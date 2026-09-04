@@ -26,13 +26,15 @@ jobs:
           node --check launcher/launcher-runtime.js
           node --check launcher/runtime-client-v84.js
           node --check launcher/account-controller-v84.js
-          node --check launcher/ux-polish-v84-2.js
+          node --check launcher/ux-polish-v84-3.js
           node --check launcher/editor-direct-authority-v84.js
-          node --check launcher/integration-resource-manager-v84-2.js
+          node --check launcher/integration-resource-manager-v84-3.js
           node --check launcher/supabase-project-manager-v84-2.js
-          node --check launcher/github-sync-v84.js
+          node --check launcher/project-auto-binding-v84.js
+          node --check launcher/github-sync-v84-3.js
           node --check launcher/integration-resource-entrypoints-v84.js
           node --check launcher/gemini-integration-v84-2.js
+          node --check launcher/operation-feedback-v84.js
           node --check background/runtime-entry-v84.js
           node --check background/runtime-entry-v84-integrations.js
           node --check background/editor-direct-runtime-v84.js
@@ -60,20 +62,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -q 'Controle restaurado. O motor de edição direta será reativado' launcher/ux-polish-v84-2.js
-          ! grep -q 'showEditorDirectModal' launcher/ux-polish-v84-2.js
-          grep -q "dataset.ldEditorDirect='true'" launcher/ux-polish-v84-2.js
+          ! grep -q 'Controle restaurado. O motor de edição direta será reativado' launcher/ux-polish-v84-3.js
+          ! grep -q 'showEditorDirectModal' launcher/ux-polish-v84-3.js
+          grep -q "dataset.ldEditorDirect='true'" launcher/ux-polish-v84-3.js
           grep -q 'Salvar vínculo' launcher/editor-direct-authority-v84.js
           grep -q 'Planejar · ZERO WRITE' launcher/editor-direct-authority-v84.js
           grep -q 'Aplicar no GitHub' launcher/editor-direct-authority-v84.js
-          grep -q 'transientDB(out)' launcher/integration-resource-manager-v84-2.js
-          grep -q 'Tentar novamente' launcher/integration-resource-manager-v84-2.js
+          grep -q 'transientDB(result)' launcher/integration-resource-manager-v84-3.js
+          grep -q 'Tentar novamente' launcher/integration-resource-manager-v84-3.js
+          grep -q 'LovableDecrypterAutoBindingV84' launcher/project-auto-binding-v84.js
+          grep -q 'AUTO_BIND_GITHUB_AMBIGUOUS' launcher/project-auto-binding-v84.js
           grep -q 'Atualizar provisionamento' launcher/supabase-project-manager-v84-2.js
           grep -q 'Renomear projeto' launcher/supabase-project-manager-v84-2.js
           grep -q 'ld84.supabase.rename' launcher/supabase-project-manager-v84-2.js
+          grep -q 'Ver histórico' launcher/github-sync-v84-3.js
+          grep -q 'Comparar' launcher/github-sync-v84-3.js
           grep -q 'Mostrar também modelos pagos / potencialmente cobrados' launcher/gemini-integration-v84-2.js
           grep -q 'PAGO / POTENCIALMENTE COBRÁVEL' launcher/gemini-integration-v84-2.js
           grep -q 'GEMINI_PAID_MODEL_OPT_IN_REQUIRED' background/gemini-provider-runtime-v84.js
+          grep -q 'ld84DangerPulseFast' launcher/operation-feedback-v84.js
 
       - name: Verify clean architecture invariants
         shell: bash
@@ -83,13 +90,15 @@ jobs:
             launcher/launcher-runtime.js \
             launcher/runtime-client-v84.js \
             launcher/account-controller-v84.js \
-            launcher/ux-polish-v84-2.js \
+            launcher/ux-polish-v84-3.js \
             launcher/editor-direct-authority-v84.js \
-            launcher/integration-resource-manager-v84-2.js \
+            launcher/integration-resource-manager-v84-3.js \
             launcher/supabase-project-manager-v84-2.js \
-            launcher/github-sync-v84.js \
+            launcher/project-auto-binding-v84.js \
+            launcher/github-sync-v84-3.js \
             launcher/integration-resource-entrypoints-v84.js \
             launcher/gemini-integration-v84-2.js \
+            launcher/operation-feedback-v84.js \
             background/runtime-entry-v84.js \
             background/runtime-entry-v84-integrations.js \
             background/editor-direct-runtime-v84.js \
@@ -109,6 +118,21 @@ jobs:
           ! grep -q 'document.body' launcher/supabase-project-manager-v84-2.js
           ! grep -q 'document.body' launcher/gemini-integration-v84-2.js
 
+      - name: Verify canonical UI remains unique
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const m=require('./manifest.json');
+          const js=m.content_scripts.flatMap(x=>x.js||[]);
+          const css=m.content_scripts.flatMap(x=>x.css||[]);
+          if(js.some(x=>x.startsWith('ui/'))) throw new Error('legacy ui JS returned');
+          if(css.some(x=>x.startsWith('ui/'))) throw new Error('legacy ui CSS returned');
+          for(const p of ['content/decrypter-chat.js','content/ui-mount-guardian.js','launcher/canonical-runtime-client.js']){
+            if(js.includes(p)) throw new Error(`legacy runtime returned: ${p}`);
+          }
+          NODE
+
       - name: Package flat installable ZIP
         shell: bash
         run: |
@@ -122,20 +146,29 @@ jobs:
           ! grep -E '^(content|ui|core|github|storage|supabase|tools|updates)/' /tmp/build84-files.txt
           for forbidden in \
             launcher/ux-polish-v84.js \
+            launcher/ux-polish-v84-2.js \
             launcher/editor-direct-v84.js \
             launcher/integration-resource-manager-v84.js \
+            launcher/integration-resource-manager-v84-2.js \
             launcher/supabase-project-manager-v84.js \
+            launcher/github-sync-v84.js \
             launcher/gemini-integration-v84.js; do
             ! grep -qx "$forbidden" /tmp/build84-files.txt
           done
           for required in \
             manifest.json \
-            launcher/ux-polish-v84-2.js \
+            launcher/launcher-runtime.js \
+            launcher/runtime-client-v84.js \
+            launcher/account-controller-v84.js \
+            launcher/ux-polish-v84-3.js \
             launcher/editor-direct-authority-v84.js \
-            launcher/integration-resource-manager-v84-2.js \
+            launcher/integration-resource-manager-v84-3.js \
             launcher/supabase-project-manager-v84-2.js \
-            launcher/github-sync-v84.js \
+            launcher/project-auto-binding-v84.js \
+            launcher/github-sync-v84-3.js \
+            launcher/integration-resource-entrypoints-v84.js \
             launcher/gemini-integration-v84-2.js \
+            launcher/operation-feedback-v84.js \
             background/editor-direct-runtime-v84.js \
             background/supabase-project-manager-runtime-v84.js \
             background/supabase-project-rename-runtime-v84.js \
