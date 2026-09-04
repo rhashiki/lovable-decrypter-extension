@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 92 — Canonical Command Composer**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→92 have now reattached the preserved modern engines to the single canonical launcher with dedicated CI gates. Build 93 is the current implementation target.
+Current engineering baseline: **Build 93 — Attachments + Voice Input**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→93 have now reattached the preserved modern engines and canonical command UX to the single launcher with dedicated CI gates. Build 94 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -152,13 +152,16 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 - Each write receives a read-only stale-aware diff preview and requires explicit `taskId + proposalDigest + humanDecision` approval.
 - No `LD2_BUILD_EXECUTE`, `LD2_PLAN_APPLY`, direct Tool Runtime write or automatic approval path is exposed.
 
-### Build 93 — Attachments + Voice Input 🚧 CURRENT
-- Attach images/documents/audio to commands using existing backend limits and validation.
-- Add browser-safe voice dictation as an input convenience, never as autonomous execution authority.
+### Build 93 — Attachments + Voice Input ✅
+- Canonical Composer accepts up to 8 bounded attachments, 15 MB each / 40 MB total.
+- Text attachments are decoded locally and included only inside a capped context budget; image/PDF/audio remain reference-only until a runtime explicitly declares compatible modality support.
+- Raw binary is not durably persisted, no binary base64 is injected into the local text prompt and no attachment upload is performed automatically.
+- Browser voice recognition is user-initiated dictation only: it fills the command textarea and never executes or approves a command.
+- Build92 proposalDigest approval, Scope Intelligence, Human Intent, Continuity and Tool Runtime gates remain unchanged.
 
 ## Phase B — Shark Git learnings generalized for Lovable Decrypter
 
-### Build 94 — Intent & Capability Router
+### Build 94 — Intent & Capability Router 🚧 CURRENT
 - Classify each request into CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME, DEPLOY or MIXED capabilities.
 - Generate an explainable capability plan before execution.
 - Never let routing expand user intent.
