@@ -50,8 +50,10 @@
     while (prefix < left.length && prefix < right.length && left[prefix] === right[prefix]) prefix += 1;
     let suffix = 0;
     while (suffix < left.length - prefix && suffix < right.length - prefix && left[left.length - 1 - suffix] === right[right.length - 1 - suffix]) suffix += 1;
-    const removed = left.slice(prefix, left.length - suffix || left.length);
-    const added = right.slice(prefix, right.length - suffix || right.length);
+    const leftEnd = Math.max(prefix, left.length - suffix);
+    const rightEnd = Math.max(prefix, right.length - suffix);
+    const removed = left.slice(prefix, leftEnd);
+    const added = right.slice(prefix, rightEnd);
     const lines = [
       ...removed.slice(0, maxLines).map(line => `- ${line}`),
       ...added.slice(0, Math.max(0, maxLines - Math.min(maxLines, removed.length))).map(line => `+ ${line}`)
