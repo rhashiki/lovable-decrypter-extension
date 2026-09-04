@@ -1,0 +1,61 @@
+name: v2.6 Build 87 · Canonical Context + Scope
+
+on:
+  push:
+    branches: [v2.6.87-canonical-context-scope]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-context-scope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical context and scope surface
+        run: |
+          node --check launcher/canonical-context-scope.js
+          node --check content/canonical-context-scope-client.js
+          node --check launcher/canonical-runtime-wiring.js
+          node --check content/context-engine-client.js
+
+      - name: Syntax · authoritative context and scope engines
+        run: |
+          node --check background/context-engine-runtime.js
+          node --check background/scope-intelligence-runtime.js
+          node --check core/context-engine-v2.js
+          node --check core/scope-intelligence-v2.js
+          node --check background/approval-runtime.js
+          node --check settings/config.js
+
+      - name: Build87 canonical context and scope contract
+        run: node tests/build87-canonical-context-scope.test.mjs
+
+      - name: Formal Scope Intelligence remains background authority
+        run: |
+          grep -q "assertScopeIntelligence({" background/approval-runtime.js
+          grep -q "scopeIntelligenceHash" background/approval-runtime.js
+          grep -q "fail-closed-before-write" background/scope-intelligence-runtime.js
+          grep -q "USER_EDIT > AI_EDIT" background/scope-intelligence-runtime.js
+          grep -q "formalScopeEvaluationPerformed: false" content/canonical-context-scope-client.js
+          grep -q "directWriteAuthority: false" content/canonical-context-scope-client.js
+
+      - name: Canonical UI does not expose context contents or persist analysis
+        run: |
+          ! grep -n "innerHTML" launcher/canonical-context-scope.js
+          ! grep -n "\.content" launcher/canonical-context-scope.js
+          ! grep -n "chrome.storage.local.set" content/canonical-context-scope-client.js
+          ! grep -n "chrome.storage.session.set" content/canonical-context-scope-client.js
+
+      - name: Legacy UI and observer polling stay absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "setInterval(" launcher/canonical-context-scope.js content/canonical-context-scope-client.js
+          ! grep -n "MutationObserver" launcher/canonical-context-scope.js content/canonical-context-scope-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-context-scope.js content/canonical-context-scope-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
