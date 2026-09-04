@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 93 — Attachments + Voice Input**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→93 have now reattached the preserved modern engines and canonical command UX to the single launcher with dedicated CI gates. Build 94 is the current implementation target.
+Current engineering baseline: **Build 95 — Safe Database Plan → Review → Run**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→95 have now reattached the preserved modern engines, canonical command UX, capability routing and ticketed database execution to the single launcher with dedicated CI gates. Build 96 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -161,17 +161,18 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 
 ## Phase B — Shark Git learnings generalized for Lovable Decrypter
 
-### Build 94 — Intent & Capability Router 🚧 CURRENT
-- Classify each request into CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME, DEPLOY or MIXED capabilities.
-- Generate an explainable capability plan before execution.
-- Never let routing expand user intent.
+### Build 94 — Intent & Capability Router ✅
+- Classifies each request into CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME, DEPLOY or MIXED capabilities.
+- Separates required capabilities from candidates and generates an explainable classification before execution.
+- Candidate capabilities never auto-activate or expand user intent; unsupported BUILD paths fail closed.
 
-### Build 95 — Safe Database Plan → Review → Run
-- Add provider-neutral database planning with Supabase first.
-- Introspect schema, generate proposed SQL/migrations and classify SAFE / CAUTION / DESTRUCTIVE.
-- Destructive operations always require explicit approval and recovery/backup evidence where available.
+### Build 95 — Safe Database Plan → Review → Run ✅
+- Supabase database execution reuses the existing OAuth/Vault/project mapping and inspects schema before a DATABASE build.
+- SQL is explicit and reviewable; backend classifies SAFE / CAUTION / DESTRUCTIVE / BLOCKED and persists only a SHA-256-bound one-time ticket, never raw SQL.
+- Destructive operations require explicit human confirmation plus recovery evidence; ambiguous write outcomes require verification and are never retried automatically.
+- CODE + DATABASE remains fail-closed until the parent transaction/orchestration builds exist.
 
-### Build 96 — Project Understanding / Context Map
+### Build 96 — Project Understanding / Context Map 🚧 CURRENT
 - Turn Context Engine + Project State Graph into a visual, user-readable map of routes, components, files, dependencies, APIs and database relationships.
 - Show confidence/freshness and allow targeted refresh.
 
