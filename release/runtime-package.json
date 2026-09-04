@@ -1,10 +1,50 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.82",
-  "paths":["manifest.json","assets","launcher"],
+  "candidate":"2.6.83",
+  "paths":[
+    "manifest.json",
+    "assets",
+    "launcher",
+    "background",
+    "core",
+    "runtime",
+    "settings",
+    "storage",
+    "github",
+    "tools",
+    "ai",
+    "security",
+    "updates",
+    "content/content.js",
+    "content/integration-readiness-client.js",
+    "content/tool-runtime-client.js",
+    "content/mcp-runtime-client.js",
+    "content/mcp-marketplace-client.js",
+    "content/context-engine-client.js",
+    "content/reversible-operations-client.js",
+    "content/continuity-runtime-client.js",
+    "content/local-agent-orchestrator-client.js",
+    "content/agent-runtime-registry-client.js",
+    "content/portable-skills-client.js",
+    "content/agent-sandbox-client.js",
+    "content/native-agent-session-client.js"
+  ],
   "excluded_paths":[],
-  "forbidden_roots":[".github","ai","background","benchmark","content","core","diagnostic","docs","github","release","runtime","scripts","security","settings","storage","supabase","tests","tools","ui","updates"],
-  "forbidden_paths":["updates/latest.json","updates/release.json"],
+  "forbidden_roots":[
+    ".github",
+    "benchmark",
+    "diagnostic",
+    "docs",
+    "release",
+    "scripts",
+    "supabase",
+    "tests",
+    "ui"
+  ],
+  "forbidden_paths":[
+    "updates/latest.json",
+    "updates/release.json"
+  ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build82 establishes launcher/launcher-runtime.js as the only shipped UI authority. The runtime package contains only manifest.json, extension icons and the canonical launcher. Legacy ui/, diagnostic shells, fab artwork, fallback mount guardians, extension-owned chat, update-manager runtime, background/service-worker code, provider runtimes, storage, network, polling, timers and MutationObserver are absent from the shipped surface. Functional Builds60-75 engines remain source-only for controlled future reattachment through the canonical launcher."
+  "notes":"Build83 reattaches the preserved modern runtime stack exclusively through launcher/launcher-runtime.js plus launcher/canonical-runtime-wiring.js. No ui/ or diagnostic root is shipped. Only explicitly activated non-visual content clients are packaged. Background/core/local runtime/security/provider engines are active again behind their existing fail-closed authorization gates."
 }
