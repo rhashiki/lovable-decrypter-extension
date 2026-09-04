@@ -1,23 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.88",
-  "version_name": "2.6 Build 88 · Canonical MCP Center",
-  "description": "Canonical MCP Center with trust, permissions, curated provenance, discovery and local read policies. MCP writes remain one-time-human-approval gated.",
+  "version": "2.6.89",
+  "version_name": "2.6 Build 89 · Canonical Agent Center",
+  "description": "Canonical Agent Center for local agent health, runtime registry, portable skills, sandbox and native sessions. External runtimes remain proposal-only.",
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": [
-    "storage",
-    "tabs",
-    "downloads",
-    "unlimitedStorage",
-    "alarms",
-    "identity"
-  ],
+  "permissions": ["storage","tabs","downloads","unlimitedStorage","alarms","identity"],
   "host_permissions": [
     "https://lovable.dev/*",
     "https://*.lovable.dev/*",
@@ -27,15 +20,8 @@
     "https://api.supabase.com/*",
     "https://*.supabase.co/*"
   ],
-  "optional_host_permissions": [
-    "https://*/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
-  ],
-  "background": {
-    "service_worker": "background/service-worker-entry.js",
-    "type": "module"
-  },
+  "optional_host_permissions": ["https://*/*","http://localhost/*","http://127.0.0.1/*"],
+  "background": {"service_worker":"background/service-worker-entry.js","type":"module"},
   "content_scripts": [
     {
       "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
@@ -65,12 +51,14 @@
         "content/portable-skills-client.js",
         "content/agent-sandbox-client.js",
         "content/native-agent-session-client.js",
+        "content/canonical-agent-center-client.js",
         "launcher/canonical-runtime-wiring.js",
         "launcher/canonical-integrations-center.js",
         "launcher/canonical-project-state.js",
         "launcher/canonical-tool-runtime.js",
         "launcher/canonical-context-scope.js",
-        "launcher/canonical-mcp-center.js"
+        "launcher/canonical-mcp-center.js",
+        "launcher/canonical-agent-center.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
@@ -80,12 +68,8 @@
     "gecko": {
       "id": "lovable-decrypter@rhashiki.dev",
       "strict_min_version": "121.0",
-      "data_collection_permissions": {
-        "required": ["authenticationInfo", "websiteContent"]
-      }
+      "data_collection_permissions": {"required":["authenticationInfo","websiteContent"]}
     }
   },
-  "action": {
-    "default_title": "Lovable Decrypter v2.6.88 · MCP Center"
-  }
+  "action": {"default_title":"Lovable Decrypter v2.6.89 · Agent Center"}
 }
