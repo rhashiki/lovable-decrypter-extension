@@ -1,0 +1,88 @@
+name: v2.6 Build 96 · Project Understanding Context Map
+
+on:
+  push:
+    branches: [v2.6.96-project-understanding-context-map]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  project-understanding-context-map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build96 surface
+        run: |
+          node --check core/project-understanding-map.js
+          node --check background/project-understanding-runtime.js
+          node --check content/canonical-project-understanding-client.js
+          node --check launcher/canonical-project-understanding.js
+          node --check background/service-worker-entry.js
+
+      - name: Build96 executable contract
+        run: node tests/build96-project-understanding-context-map.test.mjs
+
+      - name: Context Map remains read only
+        run: |
+          grep -q 'writeAuthority: false' background/project-understanding-runtime.js
+          grep -q 'writeAuthority: false' content/canonical-project-understanding-client.js
+          grep -q 'readOnly: true' content/canonical-project-understanding-client.js
+          grep -q 'authoritativeForWrites: false' core/project-understanding-map.js
+          ! grep -n -E 'atomicCommit|createCommit|updateBranch|deleteBranch|repo\.write_file|patch_apply' core/project-understanding-map.js background/project-understanding-runtime.js content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+
+      - name: No raw source leaks into canonical map contract
+        run: |
+          grep -q 'rawSourceExposed: false' content/canonical-project-understanding-client.js
+          grep -q 'rawSourcePersistedInMap: false' core/project-understanding-map.js
+          ! grep -n 'content:' content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+
+      - name: Static evidence and confidence are explicit
+        run: |
+          grep -q 'modelInferenceUsed: false' core/project-understanding-map.js
+          grep -q 'deterministicStaticAnalysis: true' core/project-understanding-map.js
+          grep -q 'confidence:' core/project-understanding-map.js
+          grep -q 'evidence:' core/project-understanding-map.js
+          grep -q 'headSha' core/project-understanding-map.js background/project-understanding-runtime.js launcher/canonical-project-understanding.js
+
+      - name: Targeted refresh is bounded and sensitive paths fail closed
+        run: |
+          grep -q "action === 'refresh_target'" background/project-understanding-runtime.js
+          grep -q 'MAX_ANALYZED_FILES = 240' background/project-understanding-runtime.js
+          grep -q 'MAX_TOTAL_SOURCE_CHARS = 3_000_000' background/project-understanding-runtime.js
+          grep -q 'SENSITIVE_PATH' core/project-understanding-map.js background/project-understanding-runtime.js
+          grep -q 'PROJECT_MAP_TARGET_INVALID' background/project-understanding-runtime.js
+
+      - name: Legacy graph concepts are reused without legacy UI activation
+        run: |
+          grep -q 'legacyProjectStateGraphConcepts' core/project-understanding-map.js
+          grep -q 'migration-version' core/project-understanding-map.js
+          grep -q 'edge-function-slug' core/project-understanding-map.js
+          ! grep -q 'content/project-state-graph-core.js' manifest.json
+          ! grep -q 'content/unified-project-state-graph.js' manifest.json
+
+      - name: No permanent polling or observer mount loop
+        run: |
+          ! grep -n 'setInterval(' core/project-understanding-map.js background/project-understanding-runtime.js content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+          ! grep -n 'MutationObserver' core/project-understanding-map.js background/project-understanding-runtime.js content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+          grep -q 'polling: false' background/project-understanding-runtime.js content/canonical-project-understanding-client.js
+
+      - name: Manifest is Build96 and ordering is canonical
+        run: |
+          grep -q '"version": "2.6.96"' manifest.json
+          grep -q 'Project Understanding Context Map' manifest.json
+          node - <<'NODE'
+          const m = require('./manifest.json');
+          const js = m.content_scripts.flatMap(x => x.js || []);
+          const client = js.indexOf('content/canonical-project-understanding-client.js');
+          const ui = js.indexOf('launcher/canonical-project-understanding.js');
+          if (client < 0 || ui < 0 || client >= ui) process.exit(1);
+          NODE
+
+      - name: Build95 safety contract remains green
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
