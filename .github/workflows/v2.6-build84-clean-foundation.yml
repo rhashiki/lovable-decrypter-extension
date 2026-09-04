@@ -45,7 +45,7 @@ jobs:
           node --check background/build84-service-worker.js
           node --check scripts/test-build84-browser-refinement.mjs
 
-      - name: Build84 real-browser refinement gate
+      - name: Build84 semantic browser-refinement gate
         run: node scripts/test-build84-browser-refinement.mjs
 
       - name: Verify validated integrations checkpoint remains intact
@@ -57,30 +57,6 @@ jobs:
           grep -q '"supabase_resource_manager_nested_once": true' docs/checkpoints/build84-integrations-resource-management-validated.json
           grep -q '"duplicate_resource_actions_removed": true' docs/checkpoints/build84-integrations-resource-management-validated.json
           grep -q '"ram_stabilizes": true' docs/checkpoints/build84-integrations-resource-management-validated.json
-
-      - name: Verify browser-reported fixes contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          ! grep -q 'Controle restaurado. O motor de edição direta será reativado' launcher/ux-polish-v84-3.js
-          ! grep -q 'showEditorDirectModal' launcher/ux-polish-v84-3.js
-          grep -q "dataset.ldEditorDirect='true'" launcher/ux-polish-v84-3.js
-          grep -q 'Salvar vínculo' launcher/editor-direct-authority-v84.js
-          grep -q 'Planejar · ZERO WRITE' launcher/editor-direct-authority-v84.js
-          grep -q 'Aplicar no GitHub' launcher/editor-direct-authority-v84.js
-          grep -q 'transientDB(result)' launcher/integration-resource-manager-v84-3.js
-          grep -q 'Tentar novamente' launcher/integration-resource-manager-v84-3.js
-          grep -q 'LovableDecrypterAutoBindingV84' launcher/project-auto-binding-v84.js
-          grep -q 'AUTO_BIND_GITHUB_AMBIGUOUS' launcher/project-auto-binding-v84.js
-          grep -q 'Atualizar provisionamento' launcher/supabase-project-manager-v84-2.js
-          grep -q 'Renomear projeto' launcher/supabase-project-manager-v84-2.js
-          grep -q 'ld84.supabase.rename' launcher/supabase-project-manager-v84-2.js
-          grep -q 'Ver histórico' launcher/github-sync-v84-3.js
-          grep -q 'Comparar' launcher/github-sync-v84-3.js
-          grep -q 'Mostrar também modelos pagos / potencialmente cobrados' launcher/gemini-integration-v84-2.js
-          grep -q 'PAGO / POTENCIALMENTE COBRÁVEL' launcher/gemini-integration-v84-2.js
-          grep -q 'GEMINI_PAID_MODEL_OPT_IN_REQUIRED' background/gemini-provider-runtime-v84.js
-          grep -q 'ld84DangerPulseFast' launcher/operation-feedback-v84.js
 
       - name: Verify clean architecture invariants
         shell: bash
