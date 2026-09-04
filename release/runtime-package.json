@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.88",
+  "candidate":"2.6.89",
   "paths":[
     "manifest.json",
     "assets",
@@ -33,11 +33,12 @@
     "content/agent-runtime-registry-client.js",
     "content/portable-skills-client.js",
     "content/agent-sandbox-client.js",
-    "content/native-agent-session-client.js"
+    "content/native-agent-session-client.js",
+    "content/canonical-agent-center-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build88 exposes MCP Runtime, Trust Gateway and the embedded curated Marketplace through the canonical launcher. It surfaces provenance, publisher/domain, trust, browser host permission, local tool policies and discovered tools. Unknown tools remain default-deny; canonical enablement is read-only. The canonical UI exposes no call_tool, prepare_write or approve_write action. Existing MCP write authority remains explicit local policy + argument Scope Lock + one-time human approval bound to exact server/tool/arguments."
+  "notes":"Build89 exposes Local Agent health/tasks, Universal Agent Runtime Registry, Portable Skills v2, Agent Sandbox and Native Sessions through one canonical Agent Center. The center performs observability and explicit management only: it does not start prompts, resume commands, approve writes or silently switch runtimes. External runtimes, skills, sandbox and native sessions retain writeAuthority=false; external credentials/endpoints remain session-only where applicable."
 }
