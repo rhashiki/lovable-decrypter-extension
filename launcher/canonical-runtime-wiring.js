@@ -51,9 +51,9 @@
       ? safe('project-state', () => window.LovableDecrypterCanonicalProjectStateApi.snapshot())
       : asError('Canonical Project State client não carregado.'),
     'git-history': async () => serviceWorkerStatus(),
-    'context-pack': async () => window.LovableDecrypterContext?.status
-      ? safe('context-engine', () => window.LovableDecrypterContext.status())
-      : asError('Context Engine client não carregado.'),
+    'context-pack': async () => window.LovableDecrypterCanonicalContextScopeApi?.status
+      ? safe('context-scope', () => window.LovableDecrypterCanonicalContextScopeApi.status())
+      : asError('Canonical Context + Scope client não carregado.'),
     'local-agent': async () => {
       const agent = window.LovableDecrypterLocalAgent;
       if (!agent?.status) return asError('Local Agent client não carregado.');
@@ -63,9 +63,9 @@
       ]);
       return { ok: agentStatus.ok, label: 'local-agent', data: { agent: agentStatus, model: modelStatus } };
     },
-    'scope-intelligence': async () => window.LovableDecrypterContext?.status
-      ? safe('scope-context', () => window.LovableDecrypterContext.status())
-      : asError('Context/Scope clients não carregados.'),
+    'scope-intelligence': async () => window.LovableDecrypterCanonicalContextScopeApi?.status
+      ? safe('context-scope', () => window.LovableDecrypterCanonicalContextScopeApi.status())
+      : asError('Canonical Context + Scope client não carregado.'),
     continuity: async () => window.LovableDecrypterContinuity?.status
       ? safe('continuity', () => window.LovableDecrypterContinuity.status())
       : asError('Continuity client não carregado.'),
@@ -116,6 +116,7 @@
         canonicalTools: Boolean(window.LovableDecrypterCanonicalToolsApi),
         mcp: Boolean(window.LovableDecrypterMCP),
         context: Boolean(window.LovableDecrypterContext),
+        canonicalContextScope: Boolean(window.LovableDecrypterCanonicalContextScopeApi),
         reversible: Boolean(window.LovableDecrypterReversibleOperations),
         continuity: Boolean(window.LovableDecrypterContinuity),
         localAgent: Boolean(window.LovableDecrypterLocalAgent),
@@ -159,7 +160,8 @@
   function delegated(moduleId) {
     return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalProjectState?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalToolRuntime?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalToolRuntime?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalContextScope?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
