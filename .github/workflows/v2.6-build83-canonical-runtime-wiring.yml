@@ -1,0 +1,72 @@
+name: v2.6 Build 83 · Canonical Runtime Wiring
+
+on:
+  push:
+    branches: [v2.6.83-canonical-runtime-wiring]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical launcher and wiring
+        run: |
+          node --check launcher/launcher-runtime.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · activated content clients
+        run: |
+          node --check content/content.js
+          node --check content/integration-readiness-client.js
+          node --check content/tool-runtime-client.js
+          node --check content/mcp-runtime-client.js
+          node --check content/mcp-marketplace-client.js
+          node --check content/context-engine-client.js
+          node --check content/reversible-operations-client.js
+          node --check content/continuity-runtime-client.js
+          node --check content/local-agent-orchestrator-client.js
+          node --check content/agent-runtime-registry-client.js
+          node --check content/portable-skills-client.js
+          node --check content/agent-sandbox-client.js
+          node --check content/native-agent-session-client.js
+
+      - name: Syntax · authoritative backend assembly
+        run: |
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Canonical Build83 contract
+        run: node tests/build83-canonical-runtime-wiring.test.mjs
+
+      - name: Physical legacy UI purge remains enforced
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          test ! -e content/ui-shell-bootstrap.js
+          test ! -e content/ui-mount-guardian.js
+          test ! -e background/decrypter-chat-runtime.js
+          ! grep -R -n -E "ui-shell-bootstrap|ui-mount-guardian|decrypter-chat-runtime|diagnostic/" manifest.json launcher background/service-worker-entry.js
+
+      - name: Preserved modern engine source inventory
+        run: |
+          test -e core/local-model-router.js
+          test -e core/tool-runtime.js
+          test -e core/mcp-trust-gateway.js
+          test -e core/context-engine-v2.js
+          test -e core/scope-intelligence-v2.js
+          test -e core/reversible-operations.js
+          test -e core/continuity-engine.js
+          test -e core/local-agent-approval.js
+          test -e core/account-integration-readiness.js
+          test -e core/agent-runtime-registry.js
+          test -e core/portable-skills.js
+          test -e core/agent-sandbox.js
+          test -e core/native-agent-sessions.js
+
+      - name: Local runtime syntax
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
