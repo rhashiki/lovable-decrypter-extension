@@ -1,0 +1,68 @@
+name: v2.6 Build 92 · Canonical Command Composer
+
+on:
+  push:
+    branches: [v2.6.92-canonical-command-composer]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-command-composer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical composer surface
+        run: |
+          node --check launcher/canonical-command-composer.js
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · authoritative agent and tool runtimes
+        run: |
+          node --check content/local-agent-orchestrator-client.js
+          node --check background/local-agent-orchestrator.js
+          node --check core/tool-runtime.js
+          node --check settings/config.js
+
+      - name: Build92 canonical command composer contract
+        run: node tests/build92-canonical-command-composer.test.mjs
+
+      - name: No automatic approval or legacy build shortcut
+        run: |
+          ! grep -n -E "LD2_BUILD_EXECUTE|LD2_PLAN_APPROVE|LD2_PLAN_APPLY" content/canonical-command-composer-client.js launcher/canonical-command-composer.js
+          grep -q "automaticApproval: false" content/canonical-command-composer-client.js
+          grep -q "directToolWriteAllowed: false" content/canonical-command-composer-client.js
+          grep -q "options.humanDecision !== true" content/canonical-command-composer-client.js
+          grep -q "proposalDigest" launcher/canonical-command-composer.js
+
+      - name: Preview is read-only and stale-aware
+        run: |
+          grep -q "invokeRead('repo.patch_preview'" content/canonical-command-composer-client.js
+          grep -q "invokeRead('repo.read_file'" content/canonical-command-composer-client.js
+          grep -q "COMPOSER_PROPOSAL_STALE" content/canonical-command-composer-client.js
+          grep -q "name: 'repo.patch_preview'" core/tool-runtime.js
+          grep -q "TOOL_WRITE_APPROVAL_REQUIRED" core/tool-runtime.js
+
+      - name: Local-first plan and build authority stays intact
+        run: |
+          grep -q "writesRequireHumanApproval:true" background/local-agent-orchestrator.js
+          grep -q "writeApprovalBoundToProposalDigest:true" background/local-agent-orchestrator.js
+          grep -q "if(run.mode==='plan')" background/local-agent-orchestrator.js
+          grep -q "Plan mode: no write executed" background/local-agent-orchestrator.js
+          grep -q "paidFallbackAllowed: false" content/canonical-command-composer-client.js
+          grep -q "remoteFallbackAllowed: false" content/canonical-command-composer-client.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "innerHTML" launcher/canonical-command-composer.js
+          ! grep -n "setInterval(" launcher/canonical-command-composer.js content/canonical-command-composer-client.js
+          ! grep -n "MutationObserver" launcher/canonical-command-composer.js content/canonical-command-composer-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-command-composer.js content/canonical-command-composer-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
