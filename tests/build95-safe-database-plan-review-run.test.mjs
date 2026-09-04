@@ -9,7 +9,13 @@ const backendSource = fs.readFileSync('supabase/functions/ld-database-runtime/in
 const migrationSource = fs.readFileSync('supabase/migrations/20260904193000_build95_database_write_tickets.sql', 'utf8');
 const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
-assert.equal(manifest.version, '2.6.95');
+if (process.env.LD_SUCCESSOR_REGRESSION === '1') {
+  const [, , patch = '0'] = String(manifest.version || '').split('.');
+  assert.equal(String(manifest.version || '').startsWith('2.6.'), true);
+  assert.ok(Number(patch) >= 95, 'successor regression requires Lovable Decrypter 2.6.95+');
+} else {
+  assert.equal(manifest.version, '2.6.95');
+}
 const scripts = manifest.content_scripts.flatMap(item => item.js || []);
 assert.ok(scripts.includes('content/canonical-database-runtime-client.js'));
 assert.ok(scripts.indexOf('content/canonical-database-runtime-client.js') < scripts.indexOf('content/canonical-command-composer-client.js'));
