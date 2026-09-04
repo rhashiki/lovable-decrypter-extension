@@ -1,0 +1,37 @@
+{
+  "schema": "ld-browser-checkpoint/1",
+  "build": 84,
+  "date": "2026-09-02",
+  "validation": "real-browser-user-test",
+  "validated": {
+    "lovable_load_stable": true,
+    "ram_stable": true,
+    "editor_direct_full_ui_opens": true,
+    "editor_binding_save": true,
+    "github_sync_refresh": true,
+    "github_history": true,
+    "github_compare": true,
+    "supabase_manager_core": true,
+    "supabase_test_bind_provision_rename": true,
+    "gemini_core": true,
+    "gemini_paid_models_opt_in": true,
+    "gemini_scrollbar": true
+  },
+  "refinement_required": {
+    "restore_validated_fab_size": true,
+    "restore_validated_rail_icon_dimensions": true,
+    "active_rail_click_closes_menu": true,
+    "remove_technical_detail_footer": true,
+    "automatic_github_supabase_project_matching": true,
+    "editor_binding_operation_feedback": true,
+    "github_sync_operation_feedback": true,
+    "github_history_fixed_scroll_card": true,
+    "github_compare_button_then_selectors": true,
+    "github_compare_fixed_scroll_results": true,
+    "supabase_rename_operation_feedback": true,
+    "resource_selection_save_feedback": true,
+    "faster_more_intense_red_testing_pulse": true
+  },
+  "release_authorized": false,
+  "main_merge_authorized": false
+}

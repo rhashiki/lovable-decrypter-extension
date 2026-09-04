@@ -1,0 +1,166 @@
+name: v2.6 Build 84 · Trust + Core Integrations
+
+on:
+  push:
+    branches: [v2.6.84-clean-functional-runtime]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check current Build84 runtime
+        run: |
+          node --check launcher/launcher-runtime.js
+          node --check launcher/runtime-client-v84.js
+          node --check launcher/account-controller-v84.js
+          node --check launcher/ux-polish-v84-3.js
+          node --check launcher/editor-direct-authority-v84.js
+          node --check launcher/integration-resource-manager-v84-3.js
+          node --check launcher/supabase-project-manager-v84-2.js
+          node --check launcher/project-auto-binding-v84.js
+          node --check launcher/github-sync-v84-3.js
+          node --check launcher/integration-resource-entrypoints-v84.js
+          node --check launcher/gemini-integration-v84-2.js
+          node --check launcher/operation-feedback-v84.js
+          node --check background/runtime-entry-v84.js
+          node --check background/runtime-entry-v84-integrations.js
+          node --check background/editor-direct-runtime-v84.js
+          node --check background/supabase-project-manager-runtime-v84.js
+          node --check background/supabase-project-rename-runtime-v84.js
+          node --check background/github-sync-runtime-v84.js
+          node --check background/gemini-provider-runtime-v84.js
+          node --check background/build84-service-worker.js
+          node --check scripts/test-build84-browser-refinement.mjs
+
+      - name: Build84 semantic browser-refinement gate
+        run: node scripts/test-build84-browser-refinement.mjs
+
+      - name: Verify validated integrations checkpoint remains intact
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '"status": "VALIDADO"' docs/checkpoints/build84-integrations-resource-management-validated.json
+          grep -q '"github_resource_manager_nested_once": true' docs/checkpoints/build84-integrations-resource-management-validated.json
+          grep -q '"supabase_resource_manager_nested_once": true' docs/checkpoints/build84-integrations-resource-management-validated.json
+          grep -q '"duplicate_resource_actions_removed": true' docs/checkpoints/build84-integrations-resource-management-validated.json
+          grep -q '"ram_stabilizes": true' docs/checkpoints/build84-integrations-resource-management-validated.json
+
+      - name: Verify clean architecture invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            launcher/launcher-runtime.js \
+            launcher/runtime-client-v84.js \
+            launcher/account-controller-v84.js \
+            launcher/ux-polish-v84-3.js \
+            launcher/editor-direct-authority-v84.js \
+            launcher/integration-resource-manager-v84-3.js \
+            launcher/supabase-project-manager-v84-2.js \
+            launcher/project-auto-binding-v84.js \
+            launcher/github-sync-v84-3.js \
+            launcher/integration-resource-entrypoints-v84.js \
+            launcher/gemini-integration-v84-2.js \
+            launcher/operation-feedback-v84.js \
+            background/runtime-entry-v84.js \
+            background/runtime-entry-v84-integrations.js \
+            background/editor-direct-runtime-v84.js \
+            background/supabase-project-manager-runtime-v84.js \
+            background/supabase-project-rename-runtime-v84.js \
+            background/github-sync-runtime-v84.js \
+            background/gemini-provider-runtime-v84.js \
+            background/build84-service-worker.js; do
+            ! grep -q 'MutationObserver' "$f"
+            ! grep -q 'setInterval' "$f"
+            ! grep -q 'setAttribute([^)]*inert' "$f"
+          done
+          ! grep -q 'chrome.alarms' background/github-sync-runtime-v84.js
+          ! grep -q 'chrome.alarms' background/supabase-project-rename-runtime-v84.js
+          ! grep -q 'chrome.alarms' background/gemini-provider-runtime-v84.js
+          ! grep -q 'document.body' launcher/editor-direct-authority-v84.js
+          ! grep -q 'document.body' launcher/supabase-project-manager-v84-2.js
+          ! grep -q 'document.body' launcher/gemini-integration-v84-2.js
+
+      - name: Verify canonical UI remains unique
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const m=require('./manifest.json');
+          const js=m.content_scripts.flatMap(x=>x.js||[]);
+          const css=m.content_scripts.flatMap(x=>x.css||[]);
+          if(js.some(x=>x.startsWith('ui/'))) throw new Error('legacy ui JS returned');
+          if(css.some(x=>x.startsWith('ui/'))) throw new Error('legacy ui CSS returned');
+          for(const p of ['content/decrypter-chat.js','content/ui-mount-guardian.js','launcher/canonical-runtime-client.js']){
+            if(js.includes(p)) throw new Error(`legacy runtime returned: ${p}`);
+          }
+          NODE
+
+      - name: Package flat installable ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="Lovable-Decrypter-v2.6.84-browser-refinement-test.zip"
+          mapfile -t PATHS < <(node -e "require('./release/runtime-package.json').paths.forEach(p=>console.log(p))")
+          zip -qr "$ZIP" "${PATHS[@]}"
+          unzip -Z1 "$ZIP" > /tmp/build84-files.txt
+          test "$(grep -Ec '^manifest\.json$' /tmp/build84-files.txt || true)" -eq 1
+          test "$(grep -Ec '\.zip$' /tmp/build84-files.txt || true)" -eq 0
+          ! grep -E '^(content|ui|core|github|storage|supabase|tools|updates)/' /tmp/build84-files.txt
+          for forbidden in \
+            launcher/ux-polish-v84.js \
+            launcher/ux-polish-v84-2.js \
+            launcher/editor-direct-v84.js \
+            launcher/integration-resource-manager-v84.js \
+            launcher/integration-resource-manager-v84-2.js \
+            launcher/supabase-project-manager-v84.js \
+            launcher/github-sync-v84.js \
+            launcher/gemini-integration-v84.js; do
+            ! grep -qx "$forbidden" /tmp/build84-files.txt
+          done
+          for required in \
+            manifest.json \
+            launcher/launcher-runtime.js \
+            launcher/runtime-client-v84.js \
+            launcher/account-controller-v84.js \
+            launcher/ux-polish-v84-3.js \
+            launcher/editor-direct-authority-v84.js \
+            launcher/integration-resource-manager-v84-3.js \
+            launcher/supabase-project-manager-v84-2.js \
+            launcher/project-auto-binding-v84.js \
+            launcher/github-sync-v84-3.js \
+            launcher/integration-resource-entrypoints-v84.js \
+            launcher/gemini-integration-v84-2.js \
+            launcher/operation-feedback-v84.js \
+            background/editor-direct-runtime-v84.js \
+            background/supabase-project-manager-runtime-v84.js \
+            background/supabase-project-rename-runtime-v84.js \
+            background/github-sync-runtime-v84.js \
+            background/gemini-provider-runtime-v84.js \
+            background/build84-service-worker.js; do
+            grep -qx "$required" /tmp/build84-files.txt
+          done
+          sha256sum "$ZIP" | tee "${ZIP}.sha256"
+
+      - name: Upload flat Build84 browser refinement ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lovable-Decrypter-v2.6.84-browser-refinement-test
+          path: |
+            Lovable-Decrypter-v2.6.84-browser-refinement-test.zip
+            Lovable-Decrypter-v2.6.84-browser-refinement-test.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

@@ -1,37 +1,40 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.82",
-  "version_name": "2.6 Build 82 · Canonical Launcher / Legacy UI Purge",
-  "description": "Canonical v11 launcher as the single visual authority. Legacy UI, diagnostic shells, fallback mounts, polling, observers, background execution and provider runtimes remain absent from the shipped surface.",
-  "icons": {
-    "16": "assets/icon16.png",
-    "32": "assets/icon32.png",
-    "48": "assets/icon48.png",
-    "128": "assets/icon128.png"
-  },
+  "version": "2.6.84",
+  "version_name": "2.6 Build 84 · Functional Parity Refinement",
+  "description": "Stable Build 84 clean runtime with validated launcher dimensions, automatic project integration matching, event-driven GitHub Sync/history, Supabase project management, optional Gemini configuration and a single functional local-AI Editor Direct authority. No global observers, content polling, mount guardians or heavy runtime activation at boot.",
+  "icons": {"16":"assets/icon16.png","32":"assets/icon32.png","48":"assets/icon48.png","128":"assets/icon128.png"},
+  "permissions": ["storage"],
   "host_permissions": [
     "https://lovable.dev/*",
-    "https://*.lovable.dev/*"
+    "https://*.lovable.dev/*",
+    "https://kkzxxnfxgrouhkzyszxs.supabase.co/*",
+    "https://api.github.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
   ],
-  "content_scripts": [
-    {
-      "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
-      "js": ["launcher/launcher-runtime.js"],
-      "run_at": "document_start",
-      "all_frames": false
-    }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "lovable-decrypter@rhashiki.dev",
-      "strict_min_version": "121.0",
-      "data_collection_permissions": {
-        "required": ["websiteContent"]
-      }
-    }
-  },
-  "action": {
-    "default_title": "Lovable Decrypter v2.6.82 · Canonical Launcher"
-  }
+  "background": {"service_worker":"background/build84-service-worker.js"},
+  "content_scripts": [{
+    "matches": ["https://lovable.dev/*","https://*.lovable.dev/*"],
+    "js": [
+      "launcher/launcher-runtime.js",
+      "launcher/runtime-client-v84.js",
+      "launcher/account-controller-v84.js",
+      "launcher/ux-polish-v84-3.js",
+      "launcher/editor-direct-authority-v84.js",
+      "launcher/integration-resource-manager-v84-3.js",
+      "launcher/supabase-project-manager-v84-2.js",
+      "launcher/project-auto-binding-v84.js",
+      "launcher/github-sync-v84-3.js",
+      "launcher/integration-resource-entrypoints-v84.js",
+      "launcher/gemini-integration-v84-2.js",
+      "launcher/operation-feedback-v84.js"
+    ],
+    "run_at": "document_start",
+    "all_frames": false
+  }],
+  "browser_specific_settings": {"gecko":{"id":"lovable-decrypter@rhashiki.dev","strict_min_version":"121.0","data_collection_permissions":{"required":["authenticationInfo","websiteContent"]}}},
+  "action": {"default_title":"Lovable Decrypter v2.6.84 · Functional Parity Refinement"}
 }

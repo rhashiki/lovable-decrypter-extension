@@ -1,0 +1,77 @@
+name: v2.6 Build 84 · UI Auto-Binding Refinement
+
+on:
+  push:
+    branches: [v2.6.84-clean-functional-runtime]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check refined runtime
+        run: |
+          node --check launcher/launcher-runtime.js
+          node --check launcher/runtime-client-v84.js
+          node --check launcher/account-controller-v84.js
+          node --check launcher/ux-polish-v84-3.js
+          node --check launcher/editor-direct-authority-v84.js
+          node --check launcher/integration-resource-manager-v84-3.js
+          node --check launcher/supabase-project-manager-v84-2.js
+          node --check launcher/project-auto-binding-v84.js
+          node --check launcher/github-sync-v84-3.js
+          node --check launcher/integration-resource-entrypoints-v84.js
+          node --check launcher/gemini-integration-v84-2.js
+          node --check launcher/operation-feedback-v84.js
+          node --check background/runtime-entry-v84.js
+          node --check background/runtime-entry-v84-integrations.js
+          node --check background/editor-direct-runtime-v84.js
+          node --check background/supabase-project-manager-runtime-v84.js
+          node --check background/supabase-project-rename-runtime-v84.js
+          node --check background/github-sync-runtime-v84.js
+          node --check background/gemini-provider-runtime-v84.js
+          node --check background/build84-service-worker.js
+          node --check scripts/test-build84-ui-autobinding-refinement.mjs
+      - name: UI parity auto-binding contract
+        run: node scripts/test-build84-ui-autobinding-refinement.mjs
+      - name: Clean architecture gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in launcher/ux-polish-v84-3.js launcher/editor-direct-authority-v84.js launcher/integration-resource-manager-v84-3.js launcher/supabase-project-manager-v84-2.js launcher/project-auto-binding-v84.js launcher/github-sync-v84-3.js launcher/integration-resource-entrypoints-v84.js launcher/gemini-integration-v84-2.js launcher/operation-feedback-v84.js background/editor-direct-runtime-v84.js background/supabase-project-manager-runtime-v84.js background/supabase-project-rename-runtime-v84.js background/github-sync-runtime-v84.js background/gemini-provider-runtime-v84.js background/build84-service-worker.js; do
+            ! grep -q 'MutationObserver' "$f"
+            ! grep -q 'setInterval' "$f"
+            ! grep -q 'setAttribute([^)]*inert' "$f"
+          done
+          ! grep -q 'history.pushState *=' launcher/project-auto-binding-v84.js
+          ! grep -q 'window.fetch *=' launcher/project-auto-binding-v84.js
+      - name: Package flat installable ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="Lovable-Decrypter-v2.6.84-ui-autobinding-test.zip"
+          mapfile -t PATHS < <(node -e "require('./release/runtime-package.json').paths.forEach(p=>console.log(p))")
+          zip -qr "$ZIP" "${PATHS[@]}"
+          unzip -Z1 "$ZIP" > /tmp/files.txt
+          test "$(grep -Ec '^manifest\.json$' /tmp/files.txt || true)" -eq 1
+          test "$(grep -Ec '\.zip$' /tmp/files.txt || true)" -eq 0
+          ! grep -E '^(content|ui|core|github|storage|supabase|tools|updates)/' /tmp/files.txt
+          for f in launcher/ux-polish-v84.js launcher/ux-polish-v84-2.js launcher/editor-direct-v84.js launcher/integration-resource-manager-v84.js launcher/integration-resource-manager-v84-2.js launcher/supabase-project-manager-v84.js launcher/github-sync-v84.js launcher/gemini-integration-v84.js; do ! grep -qx "$f" /tmp/files.txt; done
+          for f in manifest.json launcher/ux-polish-v84-3.js launcher/editor-direct-authority-v84.js launcher/integration-resource-manager-v84-3.js launcher/supabase-project-manager-v84-2.js launcher/project-auto-binding-v84.js launcher/github-sync-v84-3.js launcher/gemini-integration-v84-2.js launcher/operation-feedback-v84.js background/editor-direct-runtime-v84.js background/supabase-project-manager-runtime-v84.js background/supabase-project-rename-runtime-v84.js background/github-sync-runtime-v84.js background/gemini-provider-runtime-v84.js background/build84-service-worker.js; do grep -qx "$f" /tmp/files.txt; done
+          sha256sum "$ZIP" | tee "${ZIP}.sha256"
+      - name: Upload flat refined browser test ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lovable-Decrypter-v2.6.84-ui-autobinding-test
+          path: |
+            Lovable-Decrypter-v2.6.84-ui-autobinding-test.zip
+            Lovable-Decrypter-v2.6.84-ui-autobinding-test.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,36 @@
+{
+  "schema": "ld-build84-checkpoint/1",
+  "checkpoint": "integrations-resource-management",
+  "build": 84,
+  "validated_at": "2026-09-01T19:36:00-03:00",
+  "validation": "real-browser",
+  "status": "VALIDADO",
+  "validated_capabilities": [
+    "integration.github",
+    "integration.github-repository-management",
+    "integration.supabase",
+    "integration.supabase-project-selection",
+    "project.state",
+    "ui.monitor-state"
+  ],
+  "browser_results": {
+    "lovable_loads_normally": true,
+    "ram_stabilizes": true,
+    "github_resource_manager_nested_once": true,
+    "github_resource_manager_native_format": true,
+    "supabase_resource_manager_nested_once": true,
+    "supabase_resource_manager_native_format": true,
+    "top_level_resource_shortcuts_removed": true,
+    "duplicate_resource_actions_removed": true,
+    "status_and_details_distinct": true,
+    "monitor_functional": true
+  },
+  "architecture_gates": {
+    "global_mutation_observer": 0,
+    "continuous_content_polling": 0,
+    "lovable_shell_inert": false,
+    "mount_guardians": false,
+    "heavy_runtime_at_boot": 0
+  },
+  "notes": "Frozen after user real-browser confirmation. Future integration refinements must preserve this checkpoint. Gemini is intentionally excluded from this checkpoint and is validated separately."
+}
