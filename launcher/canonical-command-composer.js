@@ -1,11 +1,11 @@
 (() => {
   'use strict';
 
-  if (window.__LD92_CANONICAL_COMMAND_COMPOSER__) return;
-  window.__LD92_CANONICAL_COMMAND_COMPOSER__ = true;
+  if (window.__LD95_CANONICAL_COMMAND_COMPOSER__) return;
+  window.__LD95_CANONICAL_COMMAND_COMPOSER__ = true;
 
-  const BUILD = 92;
-  const VERSION = '2.6.92';
+  const BUILD = 95;
+  const VERSION = '2.6.95';
   const MODULE_ID = 'command-composer';
   const HOST_ID = 'lovable-decrypter-launcher';
   const NS = 'http://www.w3.org/2000/svg';
@@ -18,7 +18,10 @@
     result: null,
     diff: null,
     error: '',
-    taskId: ''
+    taskId: '',
+    dbRecoveryEvidence: '',
+    dbDestructiveConfirmed: false,
+    dbVerification: null
   };
 
   const root = () => document.getElementById(HOST_ID)?.shadowRoot || null;
@@ -44,8 +47,8 @@
 
   function ensureStyles() {
     const shadow = root();
-    if (!shadow || shadow.querySelector('style[data-ld92-composer]')) return;
-    const style = document.createElement('style'); style.dataset.ld92Composer = 'true';
+    if (!shadow || shadow.querySelector('style[data-ld95-composer]')) return;
+    const style = document.createElement('style'); style.dataset.ld95Composer = 'true';
     style.textContent = `
       #detail .ld92-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
       #detail .ld92-mode{min-height:34px;border:1px solid rgba(255,255,255,.065);border-radius:10px;background:rgba(255,255,255,.015);color:#9caac0;font:800 9px Arial,sans-serif;cursor:pointer}
@@ -75,6 +78,8 @@
       #detail .ld92-diff pre{margin:0;padding:8px;max-height:230px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#aebdce;font:8.5px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
       #detail .ld92-note{margin-top:8px;color:#7f8da4;font-size:8.8px;line-height:1.45}
       #detail .ld92-error{margin-top:9px;padding:8px 9px;border:1px solid rgba(255,103,122,.14);border-radius:9px;background:rgba(255,103,122,.035);color:#ffb2bd;font-size:9px;line-height:1.4}
+      #detail .ld95-db-check{display:flex;gap:7px;align-items:flex-start;margin-top:9px;color:#c8d5e6;font-size:9px;line-height:1.4}
+      #detail .ld95-db-recovery{width:100%;min-height:64px;resize:vertical;margin-top:8px;border:1px solid rgba(255,187,83,.18);border-radius:9px;background:rgba(4,10,20,.35);color:#edf5ff;padding:8px;font:9px/1.45 Arial,sans-serif}
     `;
     shadow.appendChild(style);
   }
@@ -110,11 +115,15 @@
   function phaseLabel() {
     const map = {
       idle: 'Pronto. PLAN não escreve; BUILD para antes de cada write.',
-      planning: 'Context Engine + modelo local: gerando plano…',
-      building: 'Agente local executando somente leituras automáticas até encontrar uma proposta de write…',
+      planning: 'Context Engine / Database introspection: gerando plano somente-leitura…',
+      building: 'Roteando a capacidade e preparando execução gated…',
       previewing: 'Gerando diff somente-leitura da proposta…',
-      waiting_approval: 'Write bloqueado. Revise o diff e aprove explicitamente para continuar.',
-      approving: 'Aprovação vinculada ao proposalDigest · Scope Intelligence + Human Intent + Continuity em validação…',
+      waiting_approval: 'Write de código bloqueado. Revise o diff e aprove explicitamente para continuar.',
+      waiting_database_approval: 'Write de banco bloqueado. Revise SQL, risco e projeto antes de aprovar.',
+      approving: 'Aprovação vinculada ao write exato · validações em andamento…',
+      database_running: 'Ticket aprovado. Executando o SQL exato uma única vez…',
+      database_ambiguous: 'Resultado do write é ambíguo. Não repita: use Verificar estado.',
+      database_verified: 'Estado do banco reinspecionado sem repetir o write.',
       completed: 'Execução concluída.',
       cancelled: 'Tarefa cancelada. Nenhuma aprovação pendente será executada.',
       stopped: 'Agente interrompeu a execução sem novo write.',
@@ -136,6 +145,13 @@
     for (const step of (plan.plan || []).slice(0, 20)) card.appendChild(el('div', 'ld92-step', step));
     for (const file of (plan.files || []).slice(0, 30)) card.appendChild(el('div', 'ld92-step', `${text(file?.path || file)}${file?.reason ? ` · ${file.reason}` : ''}`));
     section.appendChild(card); target.appendChild(section);
+
+    if (state.result?.database) {
+      const db = state.result.database;
+      const dbCard = el('div', 'ld92-card');
+      dbCard.append(el('b', '', `Supabase · ${text(db.projectName, db.projectRef)}`), el('small', '', db.explicitSqlRequiredForBuild ? 'PLAN somente-leitura. Para BUILD, forneça SQL explícito.' : 'SQL explícito detectado; nenhuma escrita foi executada no PLAN.'));
+      section.appendChild(dbCard);
+    }
   }
 
   function renderProposal(target) {
@@ -160,7 +176,70 @@
     target.appendChild(section);
   }
 
+  function renderDatabaseProposal(target) {
+    const proposal = state.result?.databaseProposal;
+    if (!proposal) return;
+    const ticket = proposal.ticket || {};
+    const classification = proposal.classification || {};
+    const risk = text(ticket.risk || classification.risk, 'DESTRUCTIVE').toUpperCase();
+    const destructive = risk === 'DESTRUCTIVE';
+    const riskClass = destructive ? 'bad' : (risk === 'CAUTION' ? 'warn' : 'ok');
+
+    const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'Database · Plan → Review → Run'));
+    const card = el('div', 'ld92-card');
+    card.append(el('b', '', `Supabase · ${text(proposal.project?.projectName, proposal.project?.projectRef)}`), el('small', '', `Ticket ${String(ticket.id || '').slice(0, 12)}… · expira ${text(ticket.expires_at || ticket.expiresAt, 'em breve')}`));
+    const badges = el('div', 'ld92-badges');
+    badges.append(el('span', `ld92-badge ${riskClass}`, risk), el('span', 'ld92-badge', 'SQL HASH BOUND'), el('span', 'ld92-badge ok', 'NO AUTO-RETRY'));
+    card.appendChild(badges); section.appendChild(card);
+
+    for (const note of (classification.notes || classification.review_notes || []).slice(0, 12)) section.appendChild(el('div', 'ld92-step', note));
+
+    const sqlBox = el('div', 'ld92-diff');
+    sqlBox.appendChild(el('div', 'ld92-diff-head', `SQL exato · ${String(proposal.sql || '').length} caracteres`));
+    const pre = el('pre'); pre.textContent = String(proposal.sql || ''); sqlBox.appendChild(pre); section.appendChild(sqlBox);
+
+    if (destructive) {
+      const label = el('label', 'ld95-db-check');
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = state.dbDestructiveConfirmed; checkbox.dataset.ld95DbDestructive = 'true'; checkbox.disabled = state.busy;
+      label.append(checkbox, el('span', '', 'Confirmo que revisei esta operação DESTRUCTIVE e quero executá-la neste projeto Supabase.'));
+      section.appendChild(label);
+      const recovery = el('textarea', 'ld95-db-recovery'); recovery.placeholder = 'Evidência de recuperação/backup (obrigatória para DESTRUCTIVE)…'; recovery.value = state.dbRecoveryEvidence; recovery.dataset.ld95DbRecovery = 'true'; recovery.disabled = state.busy; section.appendChild(recovery);
+    }
+
+    const actions = el('div', 'ld92-actions');
+    const approve = el('button', `ld92-btn ${destructive ? 'warn' : ''}`, destructive ? 'Aprovar + executar DESTRUCTIVE' : 'Aprovar + executar uma vez');
+    approve.type = 'button'; approve.dataset.ld92Action = 'db-approve';
+    approve.disabled = state.busy || !ticket.id || (destructive && (!state.dbDestructiveConfirmed || state.dbRecoveryEvidence.trim().length < 8));
+    actions.appendChild(approve);
+    section.appendChild(actions);
+    section.appendChild(el('div', 'ld92-note', 'O backend valida o hash deste SQL e consome o ticket antes do write. Timeout/erro ambíguo nunca dispara retry automático.'));
+    target.appendChild(section);
+  }
+
+  function renderDatabaseVerification(target) {
+    if (!state.dbVerification && state.phase !== 'database_ambiguous') return;
+    const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'Database verification'));
+    if (state.dbVerification) {
+      const rows = Array.isArray(state.dbVerification.schema) ? state.dbVerification.schema.length : 0;
+      const card = el('div', 'ld92-card'); card.append(el('b', '', 'Estado reinspecionado'), el('small', '', `${rows} registro(s) de metadados retornados pela introspecção fixa. O write não foi repetido.`)); section.appendChild(card);
+    }
+    if (state.phase === 'database_ambiguous') {
+      const actions = el('div', 'ld92-actions'); const verify = el('button', 'ld92-btn warn', 'Verificar estado sem repetir write'); verify.type = 'button'; verify.dataset.ld92Action = 'db-verify'; verify.disabled = state.busy; actions.appendChild(verify); section.appendChild(actions);
+    }
+    target.appendChild(section);
+  }
+
   function renderResult(target) {
+    const databaseExecution = state.result?.databaseExecution;
+    if (databaseExecution) {
+      const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'Resultado do banco'));
+      const card = el('div', 'ld92-card');
+      const ticket = databaseExecution.ticket || databaseExecution.approvedTicket || {};
+      card.append(el('b', '', `Write ${text(ticket.status || databaseExecution.status, 'applied')}`), el('small', '', `Ticket ${text(ticket.id, '—')} · execução única · sem retry automático`));
+      section.appendChild(card); target.appendChild(section);
+      return;
+    }
+
     const result = state.result?.result;
     if (!result || state.result?.status === 'waiting_approval') return;
     const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'Resultado'));
@@ -171,22 +250,23 @@
     const target = detail(); if (!target || target.dataset.module !== MODULE_ID) return false;
     ensureStyles(); clear(target); head(target);
 
+    const pending = state.phase === 'waiting_approval' || state.phase === 'waiting_database_approval' || state.phase === 'database_ambiguous';
     const modes = el('div', 'ld92-modes');
     for (const [mode, label] of [['plan','PLAN · somente leitura'],['build','BUILD · writes aprovados']]) {
-      const button = el('button', `ld92-mode${state.mode === mode ? ' active' : ''}`, label); button.type = 'button'; button.dataset.ld92Action = 'mode'; button.dataset.mode = mode; button.disabled = state.busy; modes.appendChild(button);
+      const button = el('button', `ld92-mode${state.mode === mode ? ' active' : ''}`, label); button.type = 'button'; button.dataset.ld92Action = 'mode'; button.dataset.mode = mode; button.disabled = state.busy || pending; modes.appendChild(button);
     }
     target.appendChild(modes);
 
-    const input = el('textarea', 'ld92-input'); input.placeholder = state.mode === 'plan' ? 'Descreva o que você quer planejar…' : 'Descreva a alteração que o agente deve executar…'; input.value = state.command; input.disabled = state.busy || state.phase === 'waiting_approval'; input.dataset.ld92Input = 'true'; target.appendChild(input);
+    const input = el('textarea', 'ld92-input'); input.placeholder = state.mode === 'plan' ? 'Descreva o que você quer planejar…' : 'Código: descreva a alteração. Banco: forneça SQL explícito (SQL: ou bloco ```sql).'; input.value = state.command; input.disabled = state.busy || pending; input.dataset.ld92Input = 'true'; target.appendChild(input);
 
     const actions = el('div', 'ld92-actions');
-    const run = el('button', 'ld92-btn', state.mode === 'plan' ? 'Gerar plano' : 'Iniciar Build'); run.type = 'button'; run.dataset.ld92Action = 'run'; run.disabled = state.busy || state.phase === 'waiting_approval'; actions.appendChild(run);
+    const run = el('button', 'ld92-btn', state.mode === 'plan' ? 'Gerar plano' : 'Iniciar Build'); run.type = 'button'; run.dataset.ld92Action = 'run'; run.disabled = state.busy || pending; actions.appendChild(run);
     const reset = el('button', 'ld92-btn secondary', 'Novo comando'); reset.type = 'button'; reset.dataset.ld92Action = 'reset'; reset.disabled = state.busy; actions.appendChild(reset); target.appendChild(actions);
 
     target.appendChild(el('div', 'ld92-phase', phaseLabel()));
     if (state.error) target.appendChild(el('div', 'ld92-error', state.error));
-    renderPlan(target); renderProposal(target); renderResult(target);
-    target.appendChild(el('div', 'ld92-note', `Build ${BUILD} · local-first. Sem paid/remote fallback. Anexos entram na Build 93. O Composer nunca chama Tool Runtime WRITE diretamente.`));
+    renderPlan(target); renderProposal(target); renderDatabaseProposal(target); renderDatabaseVerification(target); renderResult(target);
+    target.appendChild(el('div', 'ld92-note', `Build ${BUILD} · CODE usa Agent/Tool Runtime; DATABASE usa ticket Plan → Review → Run. Sem paid/remote fallback e sem auto-approval.`));
     target.style.height = `${Math.min(Math.max(460, target.scrollHeight + 18), innerHeight - 16)}px`;
     return true;
   }
@@ -195,10 +275,13 @@
     state.result = result || null;
     state.taskId = String(result?.run?.taskId || state.taskId || '');
     state.diff = null;
+    state.dbVerification = null;
     if (result?.status === 'waiting_approval' && result?.proposal) {
       state.phase = 'previewing'; render();
       state.diff = await api().previewProposal(result);
       state.phase = 'waiting_approval';
+    } else if (result?.status === 'waiting_database_approval' && result?.databaseProposal) {
+      state.phase = 'waiting_database_approval';
     } else if (result?.status === 'completed') state.phase = 'completed';
     else if (result?.status === 'cancelled') state.phase = 'cancelled';
     else state.phase = result?.status === 'stopped' ? 'stopped' : (result?.status || 'completed');
@@ -207,7 +290,7 @@
   async function runCommand() {
     if (state.busy) return;
     const center = api(); if (!center) throw new Error('Canonical Command Composer client não carregado.');
-    state.busy = true; state.error = ''; state.result = null; state.diff = null; state.taskId = '';
+    state.busy = true; state.error = ''; state.result = null; state.diff = null; state.taskId = ''; state.dbVerification = null; state.dbRecoveryEvidence = ''; state.dbDestructiveConfirmed = false;
     try {
       if (state.mode === 'plan') {
         state.phase = 'planning'; render();
@@ -232,6 +315,40 @@
     } finally { state.busy = false; render(); }
   }
 
+  async function approveDatabase() {
+    const proposal = state.result?.databaseProposal;
+    const ticket = proposal?.ticket || {};
+    if (state.busy || !ticket.id || !proposal?.sql) return;
+    const destructive = String(ticket.risk || proposal?.classification?.risk || '').toUpperCase() === 'DESTRUCTIVE';
+    if (destructive && (!state.dbDestructiveConfirmed || state.dbRecoveryEvidence.trim().length < 8)) return;
+
+    state.busy = true; state.error = ''; state.phase = 'database_running'; render();
+    try {
+      const execution = await api().approveDatabase(ticket.id, proposal.sql, {
+        humanDecision: true,
+        destructiveConfirmation: destructive && state.dbDestructiveConfirmed,
+        recoveryEvidence: state.dbRecoveryEvidence
+      });
+      state.result = { ...state.result, status: 'completed', databaseExecution: execution };
+      state.phase = 'completed';
+    } catch (error) {
+      state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`;
+      state.phase = error?.verificationRequired || error?.code === 'DATABASE_WRITE_OUTCOME_AMBIGUOUS' ? 'database_ambiguous' : 'error';
+    } finally { state.busy = false; render(); }
+  }
+
+  async function verifyDatabase() {
+    const ticketId = String(state.result?.databaseProposal?.ticket?.id || '');
+    if (state.busy || !ticketId) return;
+    state.busy = true; state.error = ''; render();
+    try {
+      state.dbVerification = await api().verifyDatabase(ticketId);
+      state.phase = 'database_verified';
+    } catch (error) {
+      state.phase = 'error'; state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`;
+    } finally { state.busy = false; render(); }
+  }
+
   async function cancel() {
     if (state.busy || !state.taskId) return;
     state.busy = true; state.error = '';
@@ -242,7 +359,7 @@
 
   function reset() {
     if (state.busy) return;
-    Object.assign(state, { command:'', phase:'idle', result:null, diff:null, error:'', taskId:'' }); render();
+    Object.assign(state, { command:'', phase:'idle', result:null, diff:null, error:'', taskId:'', dbRecoveryEvidence:'', dbDestructiveConfirmed:false, dbVerification:null }); render();
   }
 
   function openComposer(anchor) {
@@ -251,10 +368,15 @@
   }
 
   function bind() {
-    const shadow = root(); if (!shadow || shadow.__ld92ComposerBound) return false;
-    shadow.__ld92ComposerBound = true; ensureStyles(); installRailButton();
+    const shadow = root(); if (!shadow || shadow.__ld95ComposerBound) return false;
+    shadow.__ld95ComposerBound = true; ensureStyles(); installRailButton();
     shadow.addEventListener('input', event => {
       const input = event.target.closest?.('[data-ld92-input]'); if (input) state.command = String(input.value || '');
+      const recovery = event.target.closest?.('[data-ld95-db-recovery]'); if (recovery) { state.dbRecoveryEvidence = String(recovery.value || ''); render(); }
+    }, true);
+    shadow.addEventListener('change', event => {
+      const checkbox = event.target.closest?.('[data-ld95-db-destructive]');
+      if (checkbox) { state.dbDestructiveConfirmed = checkbox.checked === true; render(); }
     }, true);
     shadow.addEventListener('click', event => {
       const composerRail = event.target.closest?.('.rail-btn[data-id="command-composer"]');
@@ -263,9 +385,15 @@
       if (!action) return;
       event.preventDefault(); event.stopImmediatePropagation();
       const type = action.dataset.ld92Action;
-      if (type === 'mode') { if (!state.busy && state.phase !== 'waiting_approval') { state.mode = action.dataset.mode === 'build' ? 'build' : 'plan'; state.result = null; state.diff = null; state.error = ''; state.phase = 'idle'; render(); } return; }
+      if (type === 'mode') {
+        const pending = state.phase === 'waiting_approval' || state.phase === 'waiting_database_approval' || state.phase === 'database_ambiguous';
+        if (!state.busy && !pending) { state.mode = action.dataset.mode === 'build' ? 'build' : 'plan'; state.result = null; state.diff = null; state.error = ''; state.phase = 'idle'; state.dbVerification = null; render(); }
+        return;
+      }
       if (type === 'run') runCommand();
       else if (type === 'approve') approve();
+      else if (type === 'db-approve') approveDatabase();
+      else if (type === 'db-verify') verifyDatabase();
       else if (type === 'cancel') cancel();
       else if (type === 'reset') reset();
     }, true);
