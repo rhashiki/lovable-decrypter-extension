@@ -47,11 +47,9 @@
     supabase: async () => integrationStatus(),
     lovable: async () => integrationStatus(),
     gemini: async () => serviceWorkerStatus(),
-    'project-state': async () => ({
-      ok: true,
-      label: 'project-state',
-      data: { projectId: projectId(), url: location.href, monitorEnabled: window.LovableDecrypterV2?.getMonitorEnabled?.() !== false }
-    }),
+    'project-state': async () => window.LovableDecrypterCanonicalProjectStateApi?.snapshot
+      ? safe('project-state', () => window.LovableDecrypterCanonicalProjectStateApi.snapshot())
+      : asError('Canonical Project State client não carregado.'),
     'git-history': async () => serviceWorkerStatus(),
     'context-pack': async () => window.LovableDecrypterContext?.status
       ? safe('context-engine', () => window.LovableDecrypterContext.status())
@@ -121,6 +119,7 @@
         continuity: Boolean(window.LovableDecrypterContinuity),
         localAgent: Boolean(window.LovableDecrypterLocalAgent),
         integrationGate: Boolean(window.LovableDecrypterAccountIntegrationGate),
+        projectState: Boolean(window.LovableDecrypterCanonicalProjectStateApi),
         runtimeRegistry: Boolean(window.LovableDecrypterAgentRuntimeRegistry),
         portableSkills: Boolean(window.LovableDecrypterPortableSkills),
         sandbox: Boolean(window.LovableDecrypterAgentSandbox),
@@ -157,7 +156,8 @@
   }
 
   function delegated(moduleId) {
-    return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true;
+    return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalProjectState?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
@@ -239,6 +239,8 @@
       if (moduleId && !delegated(moduleId)) queueMicrotask(() => refreshDetail(moduleId));
     }, true);
 
+    const fab = root.getElementById('fab');
+    if (fab) fab.title = `Lovable Decrypter v${VERSION}`;
     host.setAttribute('data-ld-runtime-wiring', `canonical-v${BUILD}`);
     host.setAttribute('data-ld-version', VERSION);
     window.dispatchEvent(new CustomEvent('ld:canonical-runtime-ready', { detail: { build: BUILD, version: VERSION } }));
