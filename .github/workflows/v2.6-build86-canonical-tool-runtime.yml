@@ -1,0 +1,60 @@
+name: v2.6 Build 86 · Canonical Tool Runtime
+
+on:
+  push:
+    branches: [v2.6.86-canonical-tool-runtime]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-tool-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical tool surface
+        run: |
+          node --check launcher/canonical-tool-runtime.js
+          node --check content/canonical-tool-runtime-client.js
+          node --check launcher/canonical-runtime-wiring.js
+          node --check content/tool-runtime-client.js
+
+      - name: Syntax · authoritative tool runtime
+        run: |
+          node --check core/tool-runtime.js
+          node --check core/operation-journal.js
+          node --check background/tool-runtime.js
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Build86 canonical tool runtime contract
+        run: node tests/build86-canonical-tool-runtime.test.mjs
+
+      - name: No direct canonical write path
+        run: |
+          ! grep -n "repo.patch_apply" launcher/canonical-tool-runtime.js content/canonical-tool-runtime-client.js
+          ! grep -n "repo.write_file" launcher/canonical-tool-runtime.js content/canonical-tool-runtime-client.js
+          ! grep -n "transactionId" content/canonical-tool-runtime-client.js
+          grep -q "CANONICAL_DIRECT_WRITE_BLOCKED" content/canonical-tool-runtime-client.js
+          grep -q "TOOL_WRITE_APPROVAL_REQUIRED" core/tool-runtime.js
+          grep -q "TOOL_SCOPE_LOCK_REJECTED" core/tool-runtime.js
+
+      - name: Legacy UI and observer polling stay absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "setInterval(" launcher/canonical-tool-runtime.js content/canonical-tool-runtime-client.js
+          ! grep -n "MutationObserver" launcher/canonical-tool-runtime.js content/canonical-tool-runtime-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-tool-runtime.js content/canonical-tool-runtime-client.js
+
+      - name: Tool authority invariants
+        run: |
+          grep -q "scopeIntelligenceHash" background/tool-runtime.js
+          grep -q "checkpointWriteHead" background/tool-runtime.js
+          grep -q "assertLocalAgentProposalBinding" background/tool-runtime.js
+          grep -q "ambiguousWriteRetry: 'verification-required'" background/tool-runtime.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
