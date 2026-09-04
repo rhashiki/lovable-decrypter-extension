@@ -1,0 +1,49 @@
+name: v2.6 Build 85 · Canonical Project State
+
+on:
+  push:
+    branches: [v2.6.85-canonical-project-state]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-project-state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical project state surface
+        run: |
+          node --check launcher/canonical-project-state.js
+          node --check content/canonical-project-state-client.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · project state authority
+        run: |
+          node --check background/project-state-runtime.js
+          node --check github/git-adapter.js
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Build85 canonical project state contract
+        run: node tests/build85-canonical-project-state.test.mjs
+
+      - name: Legacy project UI and polling stay absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "setInterval(" launcher/canonical-project-state.js content/canonical-project-state-client.js background/project-state-runtime.js
+          ! grep -n "MutationObserver" launcher/canonical-project-state.js content/canonical-project-state-client.js background/project-state-runtime.js
+          ! grep -R -n -E "ui/|diagnostic/|content/lovable-project-runtime.js" manifest.json launcher/canonical-project-state.js content/canonical-project-state-client.js
+
+      - name: Security invariants
+        run: |
+          grep -q "authMode: 'oauth'" settings/config.js
+          grep -q "github_app" github/git-adapter.js
+          grep -q "sanitizeState" background/project-state-runtime.js
+          grep -q "service[_-]?role" background/project-state-runtime.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
