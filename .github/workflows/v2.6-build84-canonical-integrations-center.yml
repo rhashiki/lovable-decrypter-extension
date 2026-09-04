@@ -1,0 +1,60 @@
+name: v2.6 Build 84 · Canonical Integrations Center
+
+on:
+  push:
+    branches: [v2.6.84-canonical-integrations-center]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-integrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical integration surface
+        run: |
+          node --check launcher/launcher-runtime.js
+          node --check launcher/canonical-runtime-wiring.js
+          node --check launcher/canonical-integrations-center.js
+          node --check content/canonical-integrations-client.js
+          node --check content/integration-callback-bridge.js
+          node --check content/integration-readiness-client.js
+
+      - name: Syntax · secure provider runtimes
+        run: |
+          node --check background/github-app-runtime.js
+          node --check background/supabase-oauth-runtime.js
+          node --check background/integration-readiness-runtime.js
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Build84 canonical integrations contract
+        run: node tests/build84-canonical-integrations-center.test.mjs
+
+      - name: Legacy integration/UI remains physically absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          test ! -e content/ui-shell-bootstrap.js
+          test ! -e content/ui-mount-guardian.js
+          ! grep -R -n -E "ui/integrations-v49|account-integration-gate-v70|ui-shell-bootstrap|ui-mount-guardian|diagnostic/" manifest.json launcher content/canonical-integrations-client.js
+
+      - name: No polling or observer mount in Build84 canonical surface
+        run: |
+          ! grep -n "setInterval(" launcher/canonical-integrations-center.js content/canonical-integrations-client.js launcher/canonical-runtime-wiring.js
+          ! grep -n "MutationObserver" launcher/canonical-integrations-center.js content/canonical-integrations-client.js launcher/canonical-runtime-wiring.js
+
+      - name: Modern authority sources preserved
+        run: |
+          test -e core/account-integration-readiness.js
+          test -e core/guarded-commit.js
+          test -e background/github-app-runtime.js
+          test -e background/supabase-oauth-runtime.js
+          test -e background/integration-readiness-runtime.js
+          test -e content/integration-readiness-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
