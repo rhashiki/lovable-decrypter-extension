@@ -69,9 +69,9 @@
     continuity: async () => window.LovableDecrypterContinuity?.status
       ? safe('continuity', () => window.LovableDecrypterContinuity.status())
       : asError('Continuity client não carregado.'),
-    'tool-runtime': async () => window.LovableDecrypterTools?.list
-      ? safe('tool-runtime', () => window.LovableDecrypterTools.list(projectId()))
-      : asError('Tool Runtime client não carregado.'),
+    'tool-runtime': async () => window.LovableDecrypterCanonicalToolsApi?.snapshot
+      ? safe('tool-runtime', () => window.LovableDecrypterCanonicalToolsApi.snapshot())
+      : asError('Canonical Tool Runtime client não carregado.'),
     'mcp-runtime': async () => window.LovableDecrypterMCP?.status
       ? safe('mcp-runtime', () => window.LovableDecrypterMCP.status())
       : asError('MCP Runtime client não carregado.'),
@@ -113,6 +113,7 @@
       clients: Object.freeze({
         core: Boolean(window.LovableDecrypterV2),
         tools: Boolean(window.LovableDecrypterTools),
+        canonicalTools: Boolean(window.LovableDecrypterCanonicalToolsApi),
         mcp: Boolean(window.LovableDecrypterMCP),
         context: Boolean(window.LovableDecrypterContext),
         reversible: Boolean(window.LovableDecrypterReversibleOperations),
@@ -157,7 +158,8 @@
 
   function delegated(moduleId) {
     return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalProjectState?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalProjectState?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalToolRuntime?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
