@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.89",
+  "candidate":"2.6.90",
   "paths":[
     "manifest.json",
     "assets",
@@ -29,6 +29,7 @@
     "content/canonical-context-scope-client.js",
     "content/reversible-operations-client.js",
     "content/continuity-runtime-client.js",
+    "content/canonical-continuity-recovery-client.js",
     "content/local-agent-orchestrator-client.js",
     "content/agent-runtime-registry-client.js",
     "content/portable-skills-client.js",
@@ -40,5 +41,5 @@
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build89 exposes Local Agent health/tasks, Universal Agent Runtime Registry, Portable Skills v2, Agent Sandbox and Native Sessions through one canonical Agent Center. The center performs observability and explicit management only: it does not start prompts, resume commands, approve writes or silently switch runtimes. External runtimes, skills, sandbox and native sessions retain writeAuthority=false; external credentials/endpoints remain session-only where applicable."
+  "notes":"Build90 unifies Continuity Engine, checkpoint visibility and Reversible Operations under the canonical launcher. Expired leases may be recovered; ambiguous writes remain verification_required until Operation Journal or pre-write HEAD verification resolves them. Resume is unavailable while verification is pending. Smart Undo/Redo uses preserve strategy by default and requires a preview ticket plus explicit human confirmation; destructive previews require an additional destructive confirmation. Cascade is not exposed by the canonical UI, and no unverified write retry path exists."
 }
