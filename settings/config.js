@@ -1,4 +1,4 @@
-export const VERSION = '2.6.82';
+export const VERSION = '2.6.83';
 export const TRUST_PROTOCOL_VERSION = '2.4.21';
 export const STORAGE_KEY = 'ld2_settings';
 export const HISTORY_KEY = 'ld2_history';
