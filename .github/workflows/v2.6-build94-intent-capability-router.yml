@@ -1,0 +1,75 @@
+name: v2.6 Build 94 · Intent & Capability Router
+
+on:
+  push:
+    branches: [v2.6.94-intent-capability-router]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  intent-capability-router:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build94 router surface
+        run: |
+          node --check core/capability-router.js
+          node --check background/capability-router-runtime.js
+          node --check content/canonical-capability-router-client.js
+          node --check launcher/canonical-capability-router.js
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-runtime-wiring.js
+          node --check background/service-worker-entry.js
+          node --check settings/config.js
+
+      - name: Build94 intent capability contract
+        run: node tests/build94-intent-capability-router.test.mjs
+
+      - name: Candidates never expand scope
+        run: |
+          grep -q "candidateRequiresConfirmation: true" core/capability-router.js
+          grep -q "scopeExpansionAllowed: false" core/capability-router.js
+          grep -q "automaticExecutionAllowed: false" core/capability-router.js
+          grep -q "automaticApprovalAllowed: false" core/capability-router.js
+          grep -q "executableWithoutConfirmation: false" core/capability-router.js
+          grep -q "Sinais implícitos são candidatos e nunca são autoativados" core/capability-router.js
+
+      - name: Router remains classification-only
+        run: |
+          grep -q "authority: 'classification-only'" background/capability-router-runtime.js
+          grep -q "writeAuthority: false" background/capability-router-runtime.js
+          grep -q "writeAuthority: false" content/canonical-capability-router-client.js
+          ! grep -n -E "repo\.patch_apply|repo\.write_file|approveWrite\(|buildCommand\(|callTool\(|fetch\(" launcher/canonical-capability-router.js content/canonical-capability-router-client.js background/capability-router-runtime.js core/capability-router.js
+
+      - name: Composer fails closed outside Build94 capability set
+        run: |
+          grep -q "BUILD_EXECUTABLE_CAPABILITIES = Object.freeze(\['CODE','CONTEXT','TEST'\])" content/canonical-command-composer-client.js
+          grep -q "assertBuildCapabilities(await routeCommand(command))" content/canonical-command-composer-client.js
+          grep -q "CAPABILITY_ROUTE_UNRESOLVED" content/canonical-command-composer-client.js
+          grep -q "CAPABILITY_EXECUTION_NOT_AVAILABLE" content/canonical-command-composer-client.js
+          grep -q "capabilityCandidatesAutoActivated: false" content/canonical-command-composer-client.js
+          grep -q "automaticApproval: false" content/canonical-command-composer-client.js
+          grep -q "directToolWriteAllowed: false" content/canonical-command-composer-client.js
+
+      - name: Existing write gates remain intact
+        run: |
+          grep -q "options.humanDecision !== true" content/canonical-command-composer-client.js
+          grep -q "writesRequireHumanApproval:true" background/local-agent-orchestrator.js
+          grep -q "writeApprovalBoundToProposalDigest:true" background/local-agent-orchestrator.js
+          grep -q "scopeIntelligenceBeforeWrite:true" background/local-agent-orchestrator.js
+          grep -q "humanIntentBeforeWrite:true" background/local-agent-orchestrator.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "setInterval(" core/capability-router.js background/capability-router-runtime.js content/canonical-capability-router-client.js launcher/canonical-capability-router.js
+          ! grep -n "MutationObserver" core/capability-router.js background/capability-router-runtime.js content/canonical-capability-router-client.js launcher/canonical-capability-router.js
+          ! grep -n "innerHTML" launcher/canonical-capability-router.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json content/canonical-capability-router-client.js launcher/canonical-capability-router.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
