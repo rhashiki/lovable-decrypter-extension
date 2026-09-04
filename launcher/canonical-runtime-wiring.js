@@ -1,11 +1,11 @@
 (() => {
   'use strict';
 
-  if (window.__LD_CANONICAL_RUNTIME_WIRING_V83__) return;
-  window.__LD_CANONICAL_RUNTIME_WIRING_V83__ = true;
+  if (window.__LD_CANONICAL_RUNTIME_WIRING__) return;
+  window.__LD_CANONICAL_RUNTIME_WIRING__ = true;
 
-  const BUILD = 83;
-  const VERSION = '2.6.83';
+  const VERSION = chrome.runtime.getManifest().version;
+  const BUILD = Number(String(VERSION).split('.').at(-1)) || 83;
   const HOST_ID = 'lovable-decrypter-launcher';
 
   const asError = error => ({
@@ -30,10 +30,8 @@
   async function serviceWorkerStatus() {
     return safe('service-worker', async () => {
       if (!chrome?.runtime?.id) throw new Error('EXTENSION_RUNTIME_UNAVAILABLE');
-      // Existing read-only message wakes the MV3 service worker and proves the
-      // authoritative backend is reachable. The returned settings are never
-      // persisted, logged or exposed by this bridge.
-      await window.LovableDecrypterV2?.settings?.();
+      if (typeof window.LovableDecrypterV2?.settings !== 'function') throw new Error('CORE_CLIENT_NOT_LOADED');
+      await window.LovableDecrypterV2.settings();
       return { reachable: true, version: chrome.runtime.getManifest().version };
     });
   }
@@ -158,7 +156,12 @@
     return document.getElementById(HOST_ID);
   }
 
+  function delegated(moduleId) {
+    return window.LovableDecrypterCanonicalIntegrations?.handles?.(moduleId) === true;
+  }
+
   async function refreshDetail(moduleId) {
+    if (delegated(moduleId)) return;
     const host = findHost();
     const root = host?.shadowRoot;
     const detail = root?.getElementById('detail');
@@ -173,7 +176,7 @@
     }
 
     const result = await status(moduleId);
-    if (!detail.isConnected || detail.dataset.module !== moduleId) return;
+    if (!detail.isConnected || detail.dataset.module !== moduleId || delegated(moduleId)) return;
 
     if (state) {
       state.textContent = result.ok ? 'ONLINE' : 'INDISPONÍVEL';
@@ -217,12 +220,12 @@
   function bindCanonicalUi() {
     const host = findHost();
     const root = host?.shadowRoot;
-    if (!root || root.__ld83Wired) return false;
-    root.__ld83Wired = true;
+    if (!root || root.__ldCanonicalRuntimeWired) return false;
+    root.__ldCanonicalRuntimeWired = true;
 
     root.addEventListener('click', event => {
       const moduleId = moduleFromTarget(root, event.target);
-      if (!moduleId) return;
+      if (!moduleId || delegated(moduleId)) return;
       const action = event.target.closest?.('.action');
       if (action) {
         event.preventDefault();
@@ -233,16 +236,14 @@
 
     root.addEventListener('pointerover', event => {
       const moduleId = moduleFromTarget(root, event.target);
-      if (moduleId) queueMicrotask(() => refreshDetail(moduleId));
+      if (moduleId && !delegated(moduleId)) queueMicrotask(() => refreshDetail(moduleId));
     }, true);
 
-    host.setAttribute('data-ld-runtime-wiring', 'canonical-v83');
+    host.setAttribute('data-ld-runtime-wiring', `canonical-v${BUILD}`);
     host.setAttribute('data-ld-version', VERSION);
-    window.dispatchEvent(new CustomEvent('ld83:runtime-ready', { detail: { build: BUILD, version: VERSION } }));
+    window.dispatchEvent(new CustomEvent('ld:canonical-runtime-ready', { detail: { build: BUILD, version: VERSION } }));
     return true;
   }
 
-  if (!bindCanonicalUi()) {
-    document.addEventListener('DOMContentLoaded', bindCanonicalUi, { once: true });
-  }
+  if (!bindCanonicalUi()) document.addEventListener('DOMContentLoaded', bindCanonicalUi, { once: true });
 })();
