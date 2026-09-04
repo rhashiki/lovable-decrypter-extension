@@ -68,6 +68,7 @@
         reversible:Boolean(window.LovableDecrypterReversibleOperations), continuity:Boolean(window.LovableDecrypterContinuity),
         canonicalRecovery:Boolean(window.LovableDecrypterCanonicalContinuityRecoveryApi), canonicalAudit:Boolean(window.LovableDecrypterCanonicalActivityAuditApi),
         localAgent:Boolean(window.LovableDecrypterLocalAgent), canonicalAgent:Boolean(window.LovableDecrypterCanonicalAgentApi),
+        canonicalComposer:Boolean(window.LovableDecrypterCanonicalCommandComposerApi),
         integrationGate:Boolean(window.LovableDecrypterAccountIntegrationGate), projectState:Boolean(window.LovableDecrypterCanonicalProjectStateApi),
         runtimeRegistry:Boolean(window.LovableDecrypterAgentRuntimeRegistryClient), portableSkills:Boolean(window.LovableDecrypterPortableSkills),
         sandbox:Boolean(window.LovableDecrypterAgentSandbox), nativeSessions:Boolean(window.LovableDecrypterNativeAgentSessions)
@@ -99,7 +100,8 @@
       window.LovableDecrypterCanonicalMcpCenter?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalAgentCenter?.handles?.(moduleId) === true ||
       window.LovableDecrypterCanonicalContinuityRecovery?.handles?.(moduleId) === true ||
-      window.LovableDecrypterCanonicalActivityAudit?.handles?.(moduleId) === true;
+      window.LovableDecrypterCanonicalActivityAudit?.handles?.(moduleId) === true ||
+      window.LovableDecrypterCanonicalCommandComposer?.handles?.(moduleId) === true;
   }
 
   async function refreshDetail(moduleId) {
