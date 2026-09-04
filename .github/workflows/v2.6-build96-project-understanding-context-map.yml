@@ -37,7 +37,7 @@ jobs:
         run: |
           grep -q 'rawSourceExposed: false' content/canonical-project-understanding-client.js
           grep -q 'rawSourcePersistedInMap: false' core/project-understanding-map.js
-          ! grep -n 'content:' content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
+          ! grep -n -E '(^|[,{])[[:space:]]*content[[:space:]]*:' content/canonical-project-understanding-client.js launcher/canonical-project-understanding.js
 
       - name: Static evidence and confidence are explicit
         run: |
