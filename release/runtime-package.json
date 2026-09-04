@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.93",
+  "candidate":"2.6.94",
   "paths":[
     "manifest.json",
     "assets",
@@ -38,11 +38,12 @@
     "content/canonical-agent-center-client.js",
     "content/canonical-activity-audit-client.js",
     "content/canonical-attachments-voice-client.js",
+    "content/canonical-capability-router-client.js",
     "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build93 adds bounded attachments and user-initiated voice dictation to the canonical Command Composer. Limits remain 8 attachments, 15 MB each and 40 MB total. Text files are decoded locally and injected only within a capped command-context budget; image, PDF and audio payloads remain reference-only until a runtime explicitly supports the modality. Raw binary is not durably persisted, binary is never base64-injected into the local text prompt, and no remote upload is performed. SpeechRecognition only fills the command textarea after direct user interaction and never triggers execution or approval. Build92 proposalDigest approval, Scope Intelligence, Human Intent, Continuity and Tool Runtime write gates remain unchanged."
+  "notes":"Build94 adds an explainable classification-only Intent & Capability Router for CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME and DEPLOY, with MIXED and UNRESOLVED outcomes. Explicit signals become required capabilities; implicit signals remain candidates and are never autoactivated. The canonical Composer routes before PLAN/BUILD. PLAN may explain any route without writing; BUILD fails closed when the route is unresolved or requires capabilities not yet implemented by the canonical Build94 execution path. Build94 executable capabilities remain CODE, CONTEXT and TEST. DATABASE is deliberately deferred to Build95. The router never calls tools, Git, database, deploy, approval or write authority and cannot override Scope Intelligence, Human Intent or Continuity."
 }
