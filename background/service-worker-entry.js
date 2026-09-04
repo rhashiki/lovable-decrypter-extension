@@ -31,6 +31,7 @@ import { installAgentRuntimeRegistryRuntime } from './agent-runtime-registry-run
 import { installPortableSkillsRuntime } from './portable-skills-runtime.js';
 import { installAgentSandboxRuntime } from './agent-sandbox-runtime.js';
 import { installNativeAgentSessionRuntime } from './native-agent-session-runtime.js';
+import { installActivityAuditRuntime } from './activity-audit-runtime.js';
 import './service-worker.js';
 
 installCheckpointRuntime();
@@ -63,3 +64,4 @@ installAgentRuntimeRegistryRuntime();
 installPortableSkillsRuntime();
 installAgentSandboxRuntime();
 installNativeAgentSessionRuntime();
+installActivityAuditRuntime();
