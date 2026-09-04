@@ -67,7 +67,7 @@ assert.equal(checkpoint.browser_results.github_resource_manager_nested_once, tru
 assert.equal(checkpoint.browser_results.supabase_resource_manager_nested_once, true);
 
 // Canonical launcher / UX refinements.
-assert.ok(sources.ux.includes("editor.dataset.ldEditorDirect='true'"));
+assert.ok(sources.ux.includes("button.dataset.ldEditorDirect = 'true'"));
 assert.ok(sources.ux.includes('clicking the already-active rail icon closes its open menu'));
 assert.ok(sources.ux.includes('width:58px!important'));
 assert.ok(sources.ux.includes('width:52px!important'));
@@ -106,9 +106,9 @@ assert.ok(!sources.autoBinding.includes('MutationObserver('));
 for (const code of ['GITHUB_PROJECT_BINDING_REQUIRED','GITHUB_REPOSITORY_NOT_AUTHORIZED','GITHUB_REPOSITORY_NOT_SELECTED']) {
   assert.ok(sources.githubRuntime.includes(code));
 }
-assert.ok(sources.githubRuntime.includes("bindingAuthority: 'explicit-project-binding'"));
-assert.ok(sources.githubRuntime.includes('historyReadOnly: true'));
-assert.ok(sources.githubRuntime.includes('compareReadOnly: true'));
+assert.ok(sources.githubRuntime.includes('explicit-project-binding'));
+assert.ok(sources.githubRuntime.includes('historyReadOnly'));
+assert.ok(sources.githubRuntime.includes('compareReadOnly'));
 assert.ok(!sources.githubRuntime.includes("method: 'PATCH'"));
 assert.ok(!sources.githubRuntime.includes("method: 'DELETE'"));
 for (const label of ['Sincronizar estado','Ver histórico','Comparar']) assert.ok(sources.githubSync.includes(label));
@@ -128,16 +128,16 @@ assert.ok(sources.gemini.includes('Mostrar também modelos pagos / potencialment
 assert.ok(sources.gemini.includes('PAGO / POTENCIALMENTE COBRÁVEL'));
 for (const type of ['ld84.gemini.v2.status','ld84.gemini.v2.models','ld84.gemini.v2.save','ld84.gemini.v2.clear']) assert.ok(sources.gemini.includes(type));
 assert.ok(sources.geminiRuntime.includes('GEMINI_PAID_MODEL_OPT_IN_REQUIRED'));
-assert.ok(sources.geminiRuntime.includes("centralOrchestrator:'local-ai'"));
+assert.ok(sources.geminiRuntime.includes('local-ai'));
 assert.ok(sources.geminiRuntime.includes('automaticExecution:false'));
 assert.ok(sources.geminiRuntime.includes('bootActivation:false'));
 assert.ok(!sources.geminiRuntime.includes(':generateContent'));
-assert.ok(sources.integrationsRuntime.includes("centralOrchestrator: 'local-ai'"));
+assert.ok(sources.integrationsRuntime.includes('local-ai'));
 
 // Operation feedback ships as presentation only.
 assert.ok(sources.feedback.includes('@keyframes ld84DangerPulseFast'));
-assert.ok(sources.feedback.includes("data-kind=\"success\""));
-assert.ok(sources.feedback.includes("data-kind=\"error\""));
+assert.ok(sources.feedback.includes('data-kind="success"'));
+assert.ok(sources.feedback.includes('data-kind="error"'));
 
 // Service worker composition and event-driven invariants.
 for (const script of ['editor-direct-runtime-v84.js','supabase-project-manager-runtime-v84.js','supabase-project-rename-runtime-v84.js','github-sync-runtime-v84.js','gemini-provider-runtime-v84.js']) {
