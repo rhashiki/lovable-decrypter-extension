@@ -1,0 +1,66 @@
+name: v2.6 Build 88 · Canonical MCP Center
+
+on:
+  push:
+    branches: [v2.6.88-canonical-mcp-center]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-mcp-center:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical MCP surface
+        run: |
+          node --check launcher/canonical-mcp-center.js
+          node --check content/canonical-mcp-center-client.js
+          node --check launcher/canonical-runtime-wiring.js
+          node --check content/mcp-runtime-client.js
+          node --check content/mcp-marketplace-client.js
+
+      - name: Syntax · MCP authorities
+        run: |
+          node --check background/mcp-runtime.js
+          node --check background/mcp-marketplace-runtime.js
+          node --check core/mcp-trust-gateway.js
+          node --check core/mcp-marketplace.js
+          node --check core/mcp-client.js
+          node --check settings/config.js
+
+      - name: Build88 canonical MCP contract
+        run: node tests/build88-canonical-mcp-center.test.mjs
+
+      - name: Write authority stays out of canonical UI
+        run: |
+          ! grep -n "\.callTool(" content/canonical-mcp-center-client.js launcher/canonical-mcp-center.js
+          ! grep -n "\.prepareWrite(" content/canonical-mcp-center-client.js launcher/canonical-mcp-center.js
+          ! grep -n "\.approveWrite(" content/canonical-mcp-center-client.js launcher/canonical-mcp-center.js
+          ! grep -n "Habilitar WRITE" launcher/canonical-mcp-center.js
+          grep -q "MCP_HUMAN_APPROVAL_REQUIRED" core/mcp-trust-gateway.js
+          grep -q "MCP_APPROVAL_BINDING_MISMATCH" core/mcp-trust-gateway.js
+          grep -q "writesRequireHumanApproval: true" background/mcp-runtime.js
+
+      - name: Provenance and default-deny invariants
+        run: |
+          grep -q "unknownToolsDefaultDeny: true" background/mcp-runtime.js
+          grep -q "serverAnnotationsTrustedForSecurity: false" background/mcp-runtime.js
+          grep -q "writeToolsAutoEnabled: false" background/mcp-marketplace-runtime.js
+          grep -q "arbitraryRemoteCatalog: false" background/mcp-marketplace-runtime.js
+          grep -q "verifiedDomain" core/mcp-marketplace.js
+          grep -q "provenance" core/mcp-marketplace.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "innerHTML" launcher/canonical-mcp-center.js
+          ! grep -n "setInterval(" launcher/canonical-mcp-center.js content/canonical-mcp-center-client.js
+          ! grep -n "MutationObserver" launcher/canonical-mcp-center.js content/canonical-mcp-center-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-mcp-center.js content/canonical-mcp-center-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
