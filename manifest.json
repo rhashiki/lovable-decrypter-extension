@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.92",
-  "version_name": "2.6 Build 92 · Canonical Command Composer",
-  "description": "Single canonical local-first PLAN/BUILD command surface with read-only proposal preview, explicit proposal-digest approval, cancellation and no legacy chat.",
+  "version": "2.6.93",
+  "version_name": "2.6 Build 93 · Attachments + Voice Input",
+  "description": "Canonical PLAN/BUILD composer with bounded local attachments, safe text-context ingestion, reference-only binary media and user-initiated voice dictation.",
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
@@ -54,6 +54,7 @@
         "content/native-agent-session-client.js",
         "content/canonical-agent-center-client.js",
         "content/canonical-activity-audit-client.js",
+        "content/canonical-attachments-voice-client.js",
         "content/canonical-command-composer-client.js",
         "launcher/canonical-runtime-wiring.js",
         "launcher/canonical-integrations-center.js",
@@ -64,7 +65,8 @@
         "launcher/canonical-agent-center.js",
         "launcher/canonical-continuity-recovery.js",
         "launcher/canonical-activity-audit.js",
-        "launcher/canonical-command-composer.js"
+        "launcher/canonical-command-composer.js",
+        "launcher/canonical-attachments-voice.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
@@ -77,5 +79,5 @@
       "data_collection_permissions": {"required":["authenticationInfo","websiteContent"]}
     }
   },
-  "action": {"default_title":"Lovable Decrypter v2.6.92 · Command Composer"}
+  "action": {"default_title":"Lovable Decrypter v2.6.93 · Attachments + Voice"}
 }
