@@ -1,0 +1,73 @@
+name: v2.6 Build 89 · Canonical Agent Center
+
+on:
+  push:
+    branches: [v2.6.89-canonical-agent-center]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-agent-center:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · canonical agent surface
+        run: |
+          node --check launcher/canonical-agent-center.js
+          node --check content/canonical-agent-center-client.js
+          node --check launcher/canonical-runtime-wiring.js
+
+      - name: Syntax · agent authority runtimes
+        run: |
+          node --check background/local-agent-orchestrator.js
+          node --check background/agent-runtime-registry-runtime.js
+          node --check background/portable-skills-runtime.js
+          node --check background/agent-sandbox-runtime.js
+          node --check background/native-agent-session-runtime.js
+          node --check core/agent-runtime-registry.js
+          node --check settings/config.js
+
+      - name: Build89 canonical agent center contract
+        run: node tests/build89-canonical-agent-center.test.mjs
+
+      - name: External agents remain proposal-only
+        run: |
+          grep -q "externalWriteAuthority:false" background/agent-runtime-registry-runtime.js
+          grep -q "canWriteAuthoritative:false" core/agent-runtime-registry.js
+          grep -q "requiresDecrypterApproval:true" core/agent-runtime-registry.js
+          grep -q "writeAuthority:false" background/portable-skills-runtime.js
+          grep -q "writeAuthority:false" background/agent-sandbox-runtime.js
+          grep -q "writeAuthority:false" background/native-agent-session-runtime.js
+
+      - name: Agent Center cannot execute or approve commands
+        run: |
+          ! grep -n "localAgent().start(" content/canonical-agent-center-client.js
+          ! grep -n "localAgent().approveWrite(" content/canonical-agent-center-client.js
+          ! grep -n "localAgent().resume(" content/canonical-agent-center-client.js
+          ! grep -n "sessions().switchRuntime(" content/canonical-agent-center-client.js
+          grep -q "commandExecutionFromAgentCenter: false" content/canonical-agent-center-client.js
+          grep -q "writeApprovalFromAgentCenter: false" content/canonical-agent-center-client.js
+
+      - name: Session and intent safety invariants
+        run: |
+          grep -q "storage:'chrome.storage.session'" background/agent-runtime-registry-runtime.js
+          grep -q "skillMayExpandIntent:false" background/portable-skills-runtime.js
+          grep -q "rawFileContentPersisted:false" background/agent-sandbox-runtime.js
+          grep -q "approvalCarryOver:false" background/native-agent-session-runtime.js
+          grep -q "replayAuthority:false" background/native-agent-session-runtime.js
+          grep -q "approvalInvalidated:true" background/native-agent-session-runtime.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "innerHTML" launcher/canonical-agent-center.js
+          ! grep -n "setInterval(" launcher/canonical-agent-center.js content/canonical-agent-center-client.js
+          ! grep -n "MutationObserver" launcher/canonical-agent-center.js content/canonical-agent-center-client.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json launcher/canonical-agent-center.js content/canonical-agent-center-client.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
