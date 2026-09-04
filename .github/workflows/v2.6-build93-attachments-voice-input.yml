@@ -1,0 +1,74 @@
+name: v2.6 Build 93 · Attachments + Voice Input
+
+on:
+  push:
+    branches: [v2.6.93-attachments-voice-input]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  attachments-voice-input:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build93 canonical surface
+        run: |
+          node --check content/canonical-attachments-voice-client.js
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-attachments-voice.js
+          node --check launcher/canonical-command-composer.js
+          node --check settings/config.js
+
+      - name: Build93 attachments and voice contract
+        run: node tests/build93-attachments-voice-input.test.mjs
+
+      - name: Attachment privacy and bounded ingestion
+        run: |
+          grep -q "const MAX_ATTACHMENTS = 8" content/canonical-attachments-voice-client.js
+          grep -q "const MAX_ATTACHMENT_BYTES = 15 \* 1024 \* 1024" content/canonical-attachments-voice-client.js
+          grep -q "const MAX_TOTAL_BYTES = 40 \* 1024 \* 1024" content/canonical-attachments-voice-client.js
+          grep -q "rawBinaryPersistence: false" content/canonical-attachments-voice-client.js
+          grep -q "remoteUpload: false" content/canonical-attachments-voice-client.js
+          grep -q "base64PromptInjection: false" content/canonical-attachments-voice-client.js
+          ! grep -n "fetch(" content/canonical-attachments-voice-client.js
+          ! grep -n "readAsDataURL" content/canonical-attachments-voice-client.js
+
+      - name: Binary media stays capability-gated
+        run: |
+          grep -q "binaryReferenceOnlyWithoutRuntimeCapability: true" content/canonical-attachments-voice-client.js
+          grep -q "reference-only" content/canonical-attachments-voice-client.js
+          grep -q "local-text-context" content/canonical-attachments-voice-client.js
+          grep -q "attachmentBinaryPromptInjection: false" content/canonical-command-composer-client.js
+
+      - name: Voice is dictation only
+        run: |
+          grep -q "SpeechRecognition" launcher/canonical-attachments-voice.js
+          grep -q "webkitSpeechRecognition" launcher/canonical-attachments-voice.js
+          grep -q "recognition.start()" launcher/canonical-attachments-voice.js
+          grep -q "input.dispatchEvent(new Event('input'" launcher/canonical-attachments-voice.js
+          ! grep -n -E "approveWrite\(|buildCommand\(|repo\.patch_apply|repo\.write_file" launcher/canonical-attachments-voice.js
+
+      - name: Build92 write authority remains intact
+        run: |
+          grep -q "automaticApproval: false" content/canonical-command-composer-client.js
+          grep -q "directToolWriteAllowed: false" content/canonical-command-composer-client.js
+          grep -q "options.humanDecision !== true" content/canonical-command-composer-client.js
+          grep -q "invokeRead('repo.patch_preview'" content/canonical-command-composer-client.js
+          grep -q "COMPOSER_PROPOSAL_STALE" content/canonical-command-composer-client.js
+          grep -q "writesRequireHumanApproval:true" background/local-agent-orchestrator.js
+          grep -q "writeApprovalBoundToProposalDigest:true" background/local-agent-orchestrator.js
+
+      - name: Legacy UI and polling remain absent
+        run: |
+          test ! -d ui
+          test ! -d diagnostic
+          ! grep -n "setInterval(" content/canonical-attachments-voice-client.js launcher/canonical-attachments-voice.js
+          ! grep -n "MutationObserver" content/canonical-attachments-voice-client.js launcher/canonical-attachments-voice.js
+          ! grep -n "innerHTML" content/canonical-attachments-voice-client.js launcher/canonical-attachments-voice.js
+          ! grep -R -n -E "ui/|diagnostic/" manifest.json content/canonical-attachments-voice-client.js launcher/canonical-attachments-voice.js
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
