@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.91",
+  "candidate":"2.6.92",
   "paths":[
     "manifest.json",
     "assets",
@@ -36,11 +36,12 @@
     "content/agent-sandbox-client.js",
     "content/native-agent-session-client.js",
     "content/canonical-agent-center-client.js",
-    "content/canonical-activity-audit-client.js"
+    "content/canonical-activity-audit-client.js",
+    "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build91 adds a canonical read-only Activity + Audit surface backed by a service-worker normalizer. Operation Journal, approval history, Continuity Engine state and Local Agent run metadata are converted into one chronological event model. Raw prompts, raw model output, raw file contents and credentials are omitted; approval history never exposes the stored command. The canonical audit surface has no mutation actions and does not restore legacy Activity UI or polling."
+  "notes":"Build92 restores one canonical local-first Command Composer with PLAN and BUILD modes. PLAN delegates to the Local Agent in no-write plan mode. BUILD permits automatic read tools but stops at waiting_approval for every write proposal. The canonical client generates a read-only diff preview through repo.patch_preview or repo.read_file, rejects stale write_file proposals, and approval requires an explicit UI action bound to taskId + proposalDigest. Cancellation is exposed once a task handle exists. No LD2_BUILD_EXECUTE/LD2_PLAN_APPLY legacy shortcut, no direct Tool Runtime write, no automatic approval and no legacy chat are activated. Attachments remain disabled until Build93."
 }
