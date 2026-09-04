@@ -50,7 +50,8 @@ for (const token of [
 assert.ok(client.includes("const PORT_NAME = 'ld2-tool-runtime'"));
 assert.ok(client.includes("authorization: options.transactionId ? { transactionId: options.transactionId } : {}"));
 
-assert.ok(canonicalClient.includes("schema: 'ld-canonical-tool-runtime/1'"));
+assert.ok(canonicalClient.includes("const SCHEMA = 'ld-canonical-tool-runtime/1'"));
+assert.ok(canonicalClient.includes('schema: SCHEMA'));
 assert.ok(canonicalClient.includes('invokeRead'));
 assert.ok(canonicalClient.includes("definition.mode !== 'read'"));
 assert.ok(canonicalClient.includes('CANONICAL_DIRECT_WRITE_BLOCKED'));
