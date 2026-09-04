@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.90",
+  "candidate":"2.6.91",
   "paths":[
     "manifest.json",
     "assets",
@@ -35,11 +35,12 @@
     "content/portable-skills-client.js",
     "content/agent-sandbox-client.js",
     "content/native-agent-session-client.js",
-    "content/canonical-agent-center-client.js"
+    "content/canonical-agent-center-client.js",
+    "content/canonical-activity-audit-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build90 unifies Continuity Engine, checkpoint visibility and Reversible Operations under the canonical launcher. Expired leases may be recovered; ambiguous writes remain verification_required until Operation Journal or pre-write HEAD verification resolves them. Resume is unavailable while verification is pending. Smart Undo/Redo uses preserve strategy by default and requires a preview ticket plus explicit human confirmation; destructive previews require an additional destructive confirmation. Cascade is not exposed by the canonical UI, and no unverified write retry path exists."
+  "notes":"Build91 adds a canonical read-only Activity + Audit surface backed by a service-worker normalizer. Operation Journal, approval history, Continuity Engine state and Local Agent run metadata are converted into one chronological event model. Raw prompts, raw model output, raw file contents and credentials are omitted; approval history never exposes the stored command. The canonical audit surface has no mutation actions and does not restore legacy Activity UI or polling."
 }
