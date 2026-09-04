@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.84",
-  "version_name": "2.6 Build 84 · Canonical Integrations Center",
-  "description": "Canonical integrations center for GitHub App, Supabase OAuth, Lovable project mappings and Gemini readiness. No legacy UI restoration or integration polling.",
+  "version": "2.6.85",
+  "version_name": "2.6 Build 85 · Canonical Project State",
+  "description": "Canonical project state for Lovable identity, GitHub branch/HEAD and Supabase mapping/inspection. Event-driven and legacy-UI free.",
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
@@ -52,6 +52,7 @@
         "content/integration-callback-bridge.js",
         "content/integration-readiness-client.js",
         "content/canonical-integrations-client.js",
+        "content/canonical-project-state-client.js",
         "content/tool-runtime-client.js",
         "content/mcp-runtime-client.js",
         "content/mcp-marketplace-client.js",
@@ -64,7 +65,8 @@
         "content/agent-sandbox-client.js",
         "content/native-agent-session-client.js",
         "launcher/canonical-runtime-wiring.js",
-        "launcher/canonical-integrations-center.js"
+        "launcher/canonical-integrations-center.js",
+        "launcher/canonical-project-state.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
@@ -80,6 +82,6 @@
     }
   },
   "action": {
-    "default_title": "Lovable Decrypter v2.6.84 · Integrations Center"
+    "default_title": "Lovable Decrypter v2.6.85 · Project State"
   }
 }
