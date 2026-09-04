@@ -4,8 +4,9 @@
   if (window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__) return;
   window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__ = true;
 
-  const BUILD = 93;
+  const BUILD = 94;
   const SCHEMA = 'ld-canonical-command-composer/1';
+  const BUILD_EXECUTABLE_CAPABILITIES = Object.freeze(['CODE','CONTEXT','TEST']);
 
   function projectId() {
     return String(window.LovableDecrypterV2?.getProjectId?.() || '');
@@ -27,6 +28,16 @@
     return window.LovableDecrypterCanonicalAttachmentsVoiceApi || null;
   }
 
+  function capabilityRouter() {
+    const api = window.LovableDecrypterCapabilityRouter;
+    if (!api?.route) {
+      const error = new Error('Capability Router client não carregado.');
+      error.code = 'CAPABILITY_ROUTER_CLIENT_REQUIRED';
+      throw error;
+    }
+    return api;
+  }
+
   function ensureCommand(command) {
     const value = String(command || '').trim();
     if (!value) {
@@ -45,6 +56,36 @@
       throw error;
     }
     return value;
+  }
+
+  function attachmentManifest() {
+    const snap = attachmentApi()?.snapshot?.();
+    return Array.isArray(snap?.attachments) ? snap.attachments : [];
+  }
+
+  async function routeCommand(command) {
+    const value = ensureCommand(command);
+    return capabilityRouter().route(value, { attachments: attachmentManifest() });
+  }
+
+  function assertBuildCapabilities(report = {}) {
+    if (!report?.resolved) {
+      const error = new Error('O pedido não possui capacidade explícita suficiente para BUILD. Revise o pedido ou use PLAN para explorar sem escrita.');
+      error.code = 'CAPABILITY_ROUTE_UNRESOLVED';
+      error.capabilityRoute = report;
+      throw error;
+    }
+    const allowed = new Set(BUILD_EXECUTABLE_CAPABILITIES);
+    const required = Array.isArray(report?.requiredCapabilities) ? report.requiredCapabilities : [];
+    const unsupported = required.filter(id => !allowed.has(String(id || '').toUpperCase()));
+    if (unsupported.length) {
+      const error = new Error(`BUILD ainda não possui execução canônica para: ${unsupported.join(', ')}.`);
+      error.code = 'CAPABILITY_EXECUTION_NOT_AVAILABLE';
+      error.capabilities = unsupported;
+      error.capabilityRoute = report;
+      throw error;
+    }
+    return report;
   }
 
   async function prepareCommand(command) {
@@ -147,6 +188,7 @@
   }
 
   async function plan(command, options = {}) {
+    const capabilityRoute = await routeCommand(command);
     const prepared = await prepareCommand(command);
     const result = await agent().start(prepared.command, {
       projectId: projectId(),
@@ -156,10 +198,11 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
-    return Object.freeze({ ...result, attachments: prepared.attachmentManifest || [] });
+    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [] });
   }
 
   async function build(command, options = {}) {
+    const capabilityRoute = assertBuildCapabilities(await routeCommand(command));
     const prepared = await prepareCommand(command);
     const result = await agent().start(prepared.command, {
       projectId: projectId(),
@@ -169,7 +212,7 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
-    return Object.freeze({ ...result, attachments: prepared.attachmentManifest || [] });
+    return Object.freeze({ ...result, capabilityRoute, attachments: prepared.attachmentManifest || [] });
   }
 
   async function approveWrite(taskId, proposalDigest, options = {}) {
@@ -190,12 +233,16 @@
     projectId,
     plan,
     buildCommand: build,
+    routeCommand,
     previewProposal,
     approveWrite,
     cancelTask: taskId => agent().cancel(String(taskId || '')),
     task: taskId => agent().get(String(taskId || '')),
     attachmentSnapshot: () => attachmentApi()?.snapshot?.() || null,
     clearAttachments: () => attachmentApi()?.clear?.() || null,
+    buildExecutableCapabilities: BUILD_EXECUTABLE_CAPABILITIES,
+    capabilityCandidatesAutoActivated: false,
+    capabilityRouteRequiredBeforeBuild: true,
     localFirst: true,
     paidFallbackAllowed: false,
     remoteFallbackAllowed: false,
