@@ -4,7 +4,7 @@
   if (window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__) return;
   window.__LD92_CANONICAL_COMMAND_COMPOSER_CLIENT__ = true;
 
-  const BUILD = 92;
+  const BUILD = 93;
   const SCHEMA = 'ld-canonical-command-composer/1';
 
   function projectId() {
@@ -21,6 +21,10 @@
     const api = window.LovableDecrypterCanonicalToolsApi;
     if (!api?.invokeRead) throw new Error('Canonical Tool Runtime client não carregado.');
     return api;
+  }
+
+  function attachmentApi() {
+    return window.LovableDecrypterCanonicalAttachmentsVoiceApi || null;
   }
 
   function ensureCommand(command) {
@@ -41,6 +45,14 @@
       throw error;
     }
     return value;
+  }
+
+  async function prepareCommand(command) {
+    const value = ensureCommand(command);
+    const attachments = attachmentApi();
+    if (!attachments?.augmentCommand) return Object.freeze({ command: value, attachmentManifest: [], attachmentCount: 0 });
+    const prepared = await attachments.augmentCommand(value);
+    return Object.freeze({ ...prepared, command: ensureCommand(prepared.command || value) });
   }
 
   function compactTextDiff(before = '', after = '', maxLines = 70) {
@@ -135,8 +147,8 @@
   }
 
   async function plan(command, options = {}) {
-    const value = ensureCommand(command);
-    return agent().start(value, {
+    const prepared = await prepareCommand(command);
+    const result = await agent().start(prepared.command, {
       projectId: projectId(),
       mode: 'plan',
       explicitPaths: Array.isArray(options.explicitPaths) ? options.explicitPaths : [],
@@ -144,11 +156,12 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
+    return Object.freeze({ ...result, attachments: prepared.attachmentManifest || [] });
   }
 
   async function build(command, options = {}) {
-    const value = ensureCommand(command);
-    return agent().start(value, {
+    const prepared = await prepareCommand(command);
+    const result = await agent().start(prepared.command, {
       projectId: projectId(),
       mode: 'build',
       explicitPaths: Array.isArray(options.explicitPaths) ? options.explicitPaths : [],
@@ -156,6 +169,7 @@
       includeKnowledge: options.includeKnowledge !== false,
       timeoutMs: options.timeoutMs || 600000
     });
+    return Object.freeze({ ...result, attachments: prepared.attachmentManifest || [] });
   }
 
   async function approveWrite(taskId, proposalDigest, options = {}) {
@@ -180,11 +194,15 @@
     approveWrite,
     cancelTask: taskId => agent().cancel(String(taskId || '')),
     task: taskId => agent().get(String(taskId || '')),
+    attachmentSnapshot: () => attachmentApi()?.snapshot?.() || null,
+    clearAttachments: () => attachmentApi()?.clear?.() || null,
     localFirst: true,
     paidFallbackAllowed: false,
     remoteFallbackAllowed: false,
     directToolWriteAllowed: false,
     automaticApproval: false,
-    attachmentsEnabled: false
+    attachmentsEnabled: true,
+    attachmentBinaryPromptInjection: false,
+    voiceAutomaticExecution: false
   });
 })();
