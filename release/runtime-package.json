@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.87",
+  "candidate":"2.6.88",
   "paths":[
     "manifest.json",
     "assets",
@@ -24,6 +24,7 @@
     "content/canonical-tool-runtime-client.js",
     "content/mcp-runtime-client.js",
     "content/mcp-marketplace-client.js",
+    "content/canonical-mcp-center-client.js",
     "content/context-engine-client.js",
     "content/canonical-context-scope-client.js",
     "content/reversible-operations-client.js",
@@ -35,21 +36,8 @@
     "content/native-agent-session-client.js"
   ],
   "excluded_paths":[],
-  "forbidden_roots":[
-    ".github",
-    "benchmark",
-    "diagnostic",
-    "docs",
-    "release",
-    "scripts",
-    "supabase",
-    "tests",
-    "ui"
-  ],
-  "forbidden_paths":[
-    "updates/latest.json",
-    "updates/release.json"
-  ],
+  "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
+  "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build87 unifies Context Engine v2 and Scope Intelligence v2 in the canonical launcher. Users can build a real Context Pack, see selected file paths, context sources, recent Human Intent Locks and lock overlaps. The UI labels this overlap analysis as preflight only; formal request→plan→diff validation remains authoritative in the background approval flow before writes."
+  "notes":"Build88 exposes MCP Runtime, Trust Gateway and the embedded curated Marketplace through the canonical launcher. It surfaces provenance, publisher/domain, trust, browser host permission, local tool policies and discovered tools. Unknown tools remain default-deny; canonical enablement is read-only. The canonical UI exposes no call_tool, prepare_write or approve_write action. Existing MCP write authority remains explicit local policy + argument Scope Lock + one-time human approval bound to exact server/tool/arguments."
 }
