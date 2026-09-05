@@ -13,9 +13,9 @@ end = script.find('\n\nsource = replace_once(source,', idx)
 if end < 0:
     raise SystemExit('mixed pending render call end not found')
 call = script[start:end]
-if call.count("const pending = state.phase === 'waiting_approval'") != 2:
+if call.count("const pending = state.phase === 'waiting_approval'") != 1:
     raise SystemExit('unexpected pending-render patch call shape')
-# Convert only this known two-occurrence anchor from cardinality-exact helper to first-occurrence replacement.
+# Convert only this known two-occurrence target anchor from cardinality-exact helper to first-occurrence replacement.
 first_arg = call.find('source,')
 last_label = call.rfind(", 'mixed pending render')")
 if first_arg < 0 or last_label < 0:
