@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 96 — Project Understanding / Context Map**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→96 have now reattached the preserved modern engines, canonical command UX, capability routing, safe database execution and deterministic project understanding to the single launcher with dedicated CI gates. Build 97 is the current implementation target.
+Current engineering baseline: **Build 98 — Guided Autonomy + Policy Engine**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→98 have now reattached the preserved modern engines, canonical command UX, capability routing, safe database execution, deterministic project understanding, Change Transactions and policy-gated autonomy to the single launcher with dedicated CI gates. Build 99 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -13,7 +13,7 @@ Current engineering baseline: **Build 96 — Project Understanding / Context Map
 3. **No commercial-token dependency.** Remote AI providers remain explicit opt-in only; no automatic paid fallback.
 4. **Continuity is outside model reasoning.** Tasks, leases, checkpoints and recovery survive model/runtime interruption.
 5. **Human edits outrank AI edits.** `USER_EDIT > AI_EDIT`; Scope Intelligence and Human Intent are authoritative.
-6. **Writes fail closed.** Approval, Tool Runtime, Continuity, Account Integration Gate and Guarded Commit remain mandatory for mutation.
+6. **Writes fail closed.** Approval/authorization, Tool Runtime, Continuity, Account Integration Gate and Guarded Commit remain mandatory for mutation. Policy authorization may replace a human click only where the fixed Build 98 safety policy explicitly allows it; it never removes those gates.
 7. **Least privilege.** GitHub App + authorized repository and Supabase OAuth + authorized project are required for remote mutation.
 8. **External agents are proposal-only.** They never become authoritative writers.
 9. **Credentials are not durable project state.** Provider/runtime credentials remain server-side or session-only according to the existing Vault/security model.
@@ -148,16 +148,16 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 ### Build 92 — Canonical Command Composer ✅
 - One canonical command surface now provides PLAN and BUILD modes without reviving legacy chat.
 - PLAN uses the Local Agent in no-write mode.
-- BUILD allows automatic READ tools but stops at `waiting_approval` before every write proposal.
-- Each write receives a read-only stale-aware diff preview and requires explicit `taskId + proposalDigest + humanDecision` approval.
-- No `LD2_BUILD_EXECUTE`, `LD2_PLAN_APPLY`, direct Tool Runtime write or automatic approval path is exposed.
+- BUILD allows automatic READ tools and originally stopped at `waiting_approval` before every write proposal; Build 98 now permits bounded non-destructive code writes to receive explicit policy authorization in Guided/Autonomous modes.
+- Human-gated writes continue to receive a read-only stale-aware diff preview and require exact `taskId + proposalDigest + humanDecision` approval.
+- No `LD2_BUILD_EXECUTE`, `LD2_PLAN_APPLY` or direct Tool Runtime write path is exposed.
 
 ### Build 93 — Attachments + Voice Input ✅
 - Canonical Composer accepts up to 8 bounded attachments, 15 MB each / 40 MB total.
 - Text attachments are decoded locally and included only inside a capped context budget; image/PDF/audio remain reference-only until a runtime explicitly declares compatible modality support.
 - Raw binary is not durably persisted, no binary base64 is injected into the local text prompt and no attachment upload is performed automatically.
 - Browser voice recognition is user-initiated dictation only: it fills the command textarea and never executes or approves a command.
-- Build92 proposalDigest approval, Scope Intelligence, Human Intent, Continuity and Tool Runtime gates remain unchanged.
+- ProposalDigest, Scope Intelligence, Human Intent, Continuity and Tool Runtime gates remain unchanged.
 
 ## Phase B — Shark Git learnings generalized for Lovable Decrypter
 
@@ -179,17 +179,24 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 - Raw source is never returned in the map, model inference is not required, sensitive paths fail closed and the map has no write authority.
 - Targeted refresh can update one path without full polling; legacy Project State Graph UI/scripts remain inactive.
 
-### Build 97 — Change Transactions 🚧 CURRENT
-- Represent each requested change as one transaction containing intent, plan, files, diff, database actions, tests, approvals, commit and recovery state.
-- Provide Explain / Review / Revert from the same transaction object.
+### Build 97 — Change Transactions ✅
+- Adds a durable sanitized Change Transaction projection with separate identity from ephemeral approval transactions.
+- Links intent digest, plan metadata, file-level review metadata, `taskId`, Operation Journal evidence, Continuity state, database ticket, commit and recovery without persisting raw prompt, raw SQL, raw diff, raw file content or raw error message.
+- Canonical UI provides chronological transactions plus Review / Explain / Revert.
+- Revert delegates exclusively to Reversible Operations and remains Preview → explicit human confirmation → Apply; multi-commit transaction revert fails closed rather than pretending to revert only one commit.
+- Database approve/run/verify reconciles transaction state by exact one-time ticket ID without altering Database Runtime write semantics.
 
-### Build 98 — Guided Autonomy + Policy Engine
-- Manual, Guided and Autonomous execution modes.
-- Capability-specific policy: edit/create/test may be auto; install/push/deploy/database/destructive actions can remain ASK/ALWAYS ASK.
-- Global autonomy must never bypass mandatory safety gates.
+### Build 98 — Guided Autonomy + Policy Engine ✅
+- Adds explicit Manual, Guided and Autonomous modes; default remains Manual until user selection.
+- Deterministic policy can auto-authorize bounded non-destructive code update/create operations in Guided/Autonomous modes, while reads/tests remain automatic.
+- Database writes, destructive database actions, file deletion, Git push and deploy are fixed `ALWAYS_ASK`; dependency install remains `ASK`; sensitive/invalid paths and scope/human-intent conflicts are `DENY`.
+- Policy decisions are recalculated inside the background orchestrator and caller-supplied AUTO decisions are never trusted.
+- Policy authorization is explicitly `humanDecision:false`, uses no `humanIntentOverrides`, and still requires exact proposal digest, current HEAD, Scope Intelligence, Human Intent, validated approval transaction, Tool Runtime, Continuity and Guarded Commit.
+- Policy Engine/runtime/client/UI have no write authority or approval authority themselves.
 
-### Build 99 — Git Transaction UX
+### Build 99 — Git Transaction UX 🚧 CURRENT
 - Commit history cards, branch/head awareness, compare, guarded commit and safe revert integrated with Change Transactions.
+- Multi-commit Change Transactions must expose transaction-level Git evidence and fail closed on partial or ambiguous revert semantics.
 
 ### Build 100 — Lovable Publish / Deployment Adapter
 - Treat Lovable publication as an explicit deployment capability.
