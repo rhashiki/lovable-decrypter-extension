@@ -2,7 +2,7 @@
 
 Canonical rebaseline: 2026-09-04.
 
-Current engineering baseline: **Build 98 — Guided Autonomy + Policy Engine**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→98 have now reattached the preserved modern engines, canonical command UX, capability routing, safe database execution, deterministic project understanding, Change Transactions and policy-gated autonomy to the single launcher with dedicated CI gates. Build 99 is the current implementation target.
+Current engineering baseline: **Build 99 — Git Transaction UX**. Builds 60→75 remain the preserved modern engine foundation; Builds 76→82 were the stabilization/diagnostic/canonical-UI sequence; Builds 83→99 have now reattached the preserved modern engines, canonical command UX, capability routing, safe database execution, deterministic project understanding, Change Transactions, policy-gated autonomy and transaction-level Git safety to the single launcher with dedicated CI gates. Build 100 is the current implementation target.
 
 > Historical note: the repository did not contain a previously canonicalized Build 83→116 roadmap. This document established that remaining sequence on 2026-09-04 from the verified Build 82 state; no number below is retroactively claimed as an older committed roadmap.
 
@@ -194,11 +194,15 @@ Established `launcher/launcher-runtime.js` as the single visual authority and ph
 - Policy authorization is explicitly `humanDecision:false`, uses no `humanIntentOverrides`, and still requires exact proposal digest, current HEAD, Scope Intelligence, Human Intent, validated approval transaction, Tool Runtime, Continuity and Guarded Commit.
 - Policy Engine/runtime/client/UI have no write authority or approval authority themselves.
 
-### Build 99 — Git Transaction UX 🚧 CURRENT
-- Commit history cards, branch/head awareness, compare, guarded commit and safe revert integrated with Change Transactions.
-- Multi-commit Change Transactions must expose transaction-level Git evidence and fail closed on partial or ambiguous revert semantics.
+### Build 99 — Git Transaction UX ✅
+- Adds canonical Git Transaction cards over the same Change Transaction: commit SHA, parent, branch, message, paths and Guarded Commit checkpoint evidence are exposed without raw patch persistence.
+- Proves the exact transaction commit span from base→applied and fails closed when branches differ, commits are missing, foreign commits are interleaved, or the applied commit is no longer an ancestor of current HEAD.
+- Compare exposes bounded metadata only; the browser surface has no direct Git writer or commit authority.
+- Full-transaction Revert derives the combined net effect base→applied, runs 3-way `preserve` against current HEAD, rejects sensitive/non-text paths and never falls back to a partial commit revert.
+- Revert is bound to `taskId`, current HEAD and a short-lived fingerprinted preview ticket, requires explicit human confirmation, and writes only through the existing Guarded Commit → Shadow Build → Regression Sentinel → Validation Gate → Checkpoint → post-publish verification path.
+- Dedicated adversarial CI plus regressions for Builds 95→98 are green.
 
-### Build 100 — Lovable Publish / Deployment Adapter
+### Build 100 — Lovable Publish / Deployment Adapter 🚧 CURRENT
 - Treat Lovable publication as an explicit deployment capability.
 - Preflight, build/publish status, result verification and rollback/redeploy hooks; no silent deploy after code mutation.
 
