@@ -1,0 +1,107 @@
+name: v2.6 Build 97 · Change Transactions
+
+on:
+  push:
+    branches: [v2.6.97-change-transactions]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  change-transactions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build97 surface
+        run: |
+          node --check core/change-transactions.js
+          node --check background/change-transaction-runtime.js
+          node --check background/database-runtime.js
+          node --check content/canonical-change-transactions-client.js
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-change-transactions.js
+          node --check background/service-worker-entry.js
+
+      - name: Build97 adversarial executable contract
+        run: node tests/build97-change-transactions.test.mjs
+
+      - name: Change Transactions remain projection-only
+        run: |
+          grep -q 'projectionOnly: true' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          grep -q 'writeAuthority: false' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          grep -q 'approvalAuthority: false' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          grep -q 'directWriteAuthority: false' launcher/canonical-change-transactions.js
+          grep -q 'directApprovalAuthority: false' launcher/canonical-change-transactions.js
+          ! grep -n -E 'repo\.write_file|repo\.patch_apply|atomicCommit|createCommit|updateBranch|deleteBranch' core/change-transactions.js background/change-transaction-runtime.js content/canonical-change-transactions-client.js launcher/canonical-change-transactions.js
+
+      - name: Durable privacy boundary is explicit
+        run: |
+          grep -q 'rawPromptPersisted: false' core/change-transactions.js
+          grep -q 'rawSqlPersisted: false' core/change-transactions.js
+          grep -q 'rawDiffPersisted: false' core/change-transactions.js
+          grep -q 'rawFileContentPersisted: false' core/change-transactions.js
+          grep -q 'rawPromptPersistence: false' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          grep -q 'rawSqlPersistence: false' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          grep -q 'rawDiffPersistence: false' background/change-transaction-runtime.js content/canonical-change-transactions-client.js
+          ! grep -n 'innerHTML' launcher/canonical-change-transactions.js
+
+      - name: Review authority is reconstructed from existing engines
+        run: |
+          grep -q 'listOperationJournal' background/change-transaction-runtime.js
+          grep -q 'getContinuityTask' background/change-transaction-runtime.js
+          grep -q "operationJournal: 'evidence'" background/change-transaction-runtime.js
+          grep -q "continuity: 'recovery'" background/change-transaction-runtime.js
+          grep -q "reversibleOperations: 'revert'" background/change-transaction-runtime.js
+
+      - name: Revert remains Preview then explicit Human Apply
+        run: |
+          grep -q 'CHANGE_TRANSACTION_REVERT_HUMAN_DECISION_REQUIRED' content/canonical-change-transactions-client.js
+          grep -q 'reversible().preview' content/canonical-change-transactions-client.js
+          grep -q 'reversible().apply' content/canonical-change-transactions-client.js
+          grep -q 'data-ld97-revert-confirm' launcher/canonical-change-transactions.js
+          grep -q 'humanDecision: true' launcher/canonical-change-transactions.js
+          grep -q 'confirmDestructive: plan.destructive === true' launcher/canonical-change-transactions.js
+
+      - name: Database projection reconciles by exact ticket without changing write semantics
+        run: |
+          grep -q 'reconcileChangeTransaction' background/database-runtime.js
+          grep -q 'row?.database?.ticketId === ticketId' background/database-runtime.js
+          grep -q "status: error?.verificationRequired === true ? 'verification_required' : 'failed'" background/database-runtime.js
+          grep -q 'Projection reconciliation must never alter Database Runtime success/failure semantics' background/database-runtime.js
+
+      - name: Manifest is Build97 and canonical ordering is valid
+        run: |
+          grep -q '"version": "2.6.97"' manifest.json
+          grep -q 'Build 97 · Change Transactions' manifest.json
+          node - <<'NODE'
+          const m = require('./manifest.json');
+          const js = m.content_scripts.flatMap(x => x.js || []);
+          const reversible = js.indexOf('content/reversible-operations-client.js');
+          const client = js.indexOf('content/canonical-change-transactions-client.js');
+          const composer = js.indexOf('content/canonical-command-composer-client.js');
+          const ui = js.indexOf('launcher/canonical-change-transactions.js');
+          if (reversible < 0 || client <= reversible || composer <= client || ui <= composer) process.exit(1);
+          NODE
+          grep -q 'installChangeTransactionRuntime' background/service-worker-entry.js
+
+      - name: Build95 safety contract remains green
+        env:
+          LD_SUCCESSOR_REGRESSION: '1'
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Build96 Project Understanding regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build97.json
+          trap 'cp /tmp/manifest-build97.json manifest.json' EXIT
+          node - <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('manifest.json','utf8'));
+          m.version = '2.6.96';
+          fs.writeFileSync('manifest.json', JSON.stringify(m, null, 2) + '\n');
+          NODE
+          node tests/build96-project-understanding-context-map.test.mjs
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
