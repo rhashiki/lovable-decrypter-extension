@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.94",
+  "candidate":"2.6.97",
   "paths":[
     "manifest.json",
     "assets",
@@ -27,6 +27,7 @@
     "content/canonical-mcp-center-client.js",
     "content/context-engine-client.js",
     "content/canonical-context-scope-client.js",
+    "content/canonical-project-understanding-client.js",
     "content/reversible-operations-client.js",
     "content/continuity-runtime-client.js",
     "content/canonical-continuity-recovery-client.js",
@@ -39,11 +40,13 @@
     "content/canonical-activity-audit-client.js",
     "content/canonical-attachments-voice-client.js",
     "content/canonical-capability-router-client.js",
+    "content/canonical-database-runtime-client.js",
+    "content/canonical-change-transactions-client.js",
     "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build94 adds an explainable classification-only Intent & Capability Router for CODE, DATABASE, GIT, CONTEXT, TEST, RUNTIME and DEPLOY, with MIXED and UNRESOLVED outcomes. Explicit signals become required capabilities; implicit signals remain candidates and are never autoactivated. The canonical Composer routes before PLAN/BUILD. PLAN may explain any route without writing; BUILD fails closed when the route is unresolved or requires capabilities not yet implemented by the canonical Build94 execution path. Build94 executable capabilities remain CODE, CONTEXT and TEST. DATABASE is deliberately deferred to Build95. The router never calls tools, Git, database, deploy, approval or write authority and cannot override Scope Intelligence, Human Intent or Continuity."
+  "notes":"Build97 adds durable sanitized Change Transactions over the existing authoritative engines. The projection references task, approval, operation, database ticket, commit and recovery metadata without persisting raw prompt, raw SQL, raw diff or raw file content. Review is reconstructed from Operation Journal and Continuity; Revert delegates exclusively to Reversible Operations Preview -> explicit human confirmation -> Apply. Database approve/run/verify reconciles projection state by the exact one-time ticket id without changing Database Runtime write semantics. This package metadata does not authorize OTA, GitHub Release, store publication or merge to main."
 }
