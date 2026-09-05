@@ -49,6 +49,42 @@ function safeDatabase(database = {}) {
   });
 }
 
+function safeLovableUrl(value = '') {
+  const source = text(value, 3000);
+  if (!source) return '';
+  try {
+    const url = new URL(source);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== 'https:' || (host !== 'lovable.app' && !host.endsWith('.lovable.app'))) return '';
+    url.username = '';
+    url.password = '';
+    url.hash = '';
+    return url.toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+function safeDeployment(deployment = {}) {
+  return Object.freeze({
+    provider: deployment?.provider === 'lovable' ? 'lovable' : text(deployment?.provider, 80),
+    transport: deployment?.transport === 'mcp' ? 'mcp' : text(deployment?.transport, 40),
+    serverId: text(deployment?.serverId, 180),
+    projectId: text(deployment?.projectId, 180),
+    taskId: text(deployment?.taskId, 180),
+    ticketId: text(deployment?.ticketId, 180),
+    mcpApprovalId: text(deployment?.mcpApprovalId, 180),
+    expectedCommitSha: text(deployment?.expectedCommitSha, 128).toLowerCase(),
+    operationId: text(deployment?.operationId, 180),
+    status: text(deployment?.status, 80),
+    liveUrl: safeLovableUrl(deployment?.liveUrl),
+    verified: deployment?.verified === true,
+    verificationRequired: deployment?.verificationRequired === true,
+    automaticRetry: false,
+    rawResultPersisted: false
+  });
+}
+
 function safeRecovery(recovery = {}) {
   return Object.freeze({
     status: text(recovery?.status, 80),
@@ -98,6 +134,7 @@ function safeRecord(input = {}) {
       operationIds: Object.freeze(unique(input?.links?.operationIds || []).slice(0, 100))
     }),
     database: safeDatabase(input?.database || {}),
+    deployment: safeDeployment(input?.deployment || {}),
     recovery: safeRecovery(input?.recovery || {}),
     lastError: safeError(input?.lastError),
     privacy: Object.freeze({
@@ -105,6 +142,7 @@ function safeRecord(input = {}) {
       rawSqlPersisted: false,
       rawDiffPersisted: false,
       rawFileContentPersisted: false,
+      rawDeploymentResultPersisted: false,
       errorMessagePersisted: false,
       credentialsPersisted: false
     }),
@@ -113,7 +151,8 @@ function safeRecord(input = {}) {
       approvalAuthority: false,
       operationJournalIsEvidence: true,
       continuityIsRecoveryAuthority: true,
-      reversibleOperationsIsRevertAuthority: true
+      reversibleOperationsIsRevertAuthority: true,
+      deploymentAdapterIsDeployAuthority: true
     })
   });
 }
@@ -171,6 +210,7 @@ export async function patchChangeTransaction(id, patch = {}) {
         operationIds: unique([...(current.links?.operationIds || []), ...(patch.links?.operationIds || [])])
       },
       database: { ...current.database, ...(patch.database || {}) },
+      deployment: { ...current.deployment, ...(patch.deployment || {}) },
       recovery: { ...current.recovery, ...(patch.recovery || {}) }
     });
     rows[index] = merged;
