@@ -35,6 +35,7 @@ import { installAgentSandboxRuntime } from './agent-sandbox-runtime.js';
 import { installNativeAgentSessionRuntime } from './native-agent-session-runtime.js';
 import { installActivityAuditRuntime } from './activity-audit-runtime.js';
 import { installCapabilityRouterRuntime } from './capability-router-runtime.js';
+import { installChangeTransactionRuntime } from './change-transaction-runtime.js';
 import './service-worker.js';
 
 installCheckpointRuntime();
@@ -71,3 +72,4 @@ installAgentSandboxRuntime();
 installNativeAgentSessionRuntime();
 installActivityAuditRuntime();
 installCapabilityRouterRuntime();
+installChangeTransactionRuntime();
