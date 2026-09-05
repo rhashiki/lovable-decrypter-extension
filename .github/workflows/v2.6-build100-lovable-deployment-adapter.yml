@@ -1,0 +1,120 @@
+name: v2.6 Build 100 · Lovable Deployment Adapter
+
+on:
+  push:
+    branches: [v2.6.100-lovable-deployment-adapter]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lovable-deployment-adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build100 surface
+        run: |
+          node --check core/lovable-deployment-adapter.js
+          node --check background/lovable-deployment-runtime.js
+          node --check content/canonical-lovable-deployment-client.js
+          node --check launcher/canonical-lovable-deployment.js
+          node --check background/service-worker-entry.js
+
+      - name: Build100 adversarial executable contract
+        run: node tests/build100-lovable-deployment-adapter.test.mjs
+
+      - name: No undocumented Lovable publish transport
+        run: |
+          ! grep -n -E 'api\.lovable\.dev|fetch[[:space:]]*\(' background/lovable-deployment-runtime.js content/canonical-lovable-deployment-client.js launcher/canonical-lovable-deployment.js
+          grep -q 'LOVABLE_DEPLOY_TRANSPORT_UNAVAILABLE' background/lovable-deployment-runtime.js
+          grep -q 'LOVABLE_DEPLOY_TRANSPORT_NOT_HOMOLOGATED' background/lovable-deployment-runtime.js
+          grep -q 'undocumentedEndpointAllowed: false' core/lovable-deployment-adapter.js content/canonical-lovable-deployment-client.js
+
+      - name: Publish requires fresh explicit human ticket
+        run: |
+          grep -q 'if (!preflight.ready)' background/lovable-deployment-runtime.js
+          grep -q 'payload?.humanDecision !== true' background/lovable-deployment-runtime.js
+          grep -q 'preflight.git.headSha !== ticket.headSha' background/lovable-deployment-runtime.js
+          grep -q 'fingerprint !== ticket.fingerprint' background/lovable-deployment-runtime.js
+          grep -q 'used: true' background/lovable-deployment-runtime.js
+          grep -q 'LOVABLE_DEPLOY_OUTCOME_AMBIGUOUS' background/lovable-deployment-runtime.js
+          grep -q 'verificationRequired = true' background/lovable-deployment-runtime.js
+
+      - name: Deployment never auto-routes from existing writers
+        run: |
+          ! grep -n -E 'canonical-lovable-deployment|LovableDecrypterCanonicalLovableDeployment|ld2-lovable-deployment' content/canonical-command-composer-client.js background/local-agent-orchestrator.js background/git-transaction-runtime.js
+          grep -q 'automaticPublish: false' core/lovable-deployment-adapter.js content/canonical-lovable-deployment-client.js
+          grep -q 'publishAfterCommit: false' core/lovable-deployment-adapter.js content/canonical-lovable-deployment-client.js
+          grep -q 'ambiguousPublishRetryAllowed: false' core/lovable-deployment-adapter.js content/canonical-lovable-deployment-client.js
+
+      - name: Preflight binds project Git and transaction safety
+        run: |
+          grep -q 'LOVABLE_PROJECT_CONTEXT_MISMATCH' background/lovable-deployment-runtime.js
+          grep -q 'GITHUB_HEAD_UNAVAILABLE' background/lovable-deployment-runtime.js
+          grep -q 'CHANGE_TRANSACTION_VERIFICATION_REQUIRED' background/lovable-deployment-runtime.js
+          grep -q 'CHANGE_TRANSACTION_ACTIVE' background/lovable-deployment-runtime.js
+          grep -q 'LOVABLE_GITSYNC_MAPPING_MISMATCH' background/lovable-deployment-runtime.js
+
+      - name: Manifest and runtime package are Build100
+        run: |
+          grep -q '"version": "2.6.100"' manifest.json
+          grep -q 'Build 100 · Lovable Deployment Adapter' manifest.json
+          grep -q '"candidate":"2.6.100"' release/runtime-package.json
+          grep -q 'canonical-lovable-deployment-client.js' manifest.json release/runtime-package.json
+          grep -q 'canonical-lovable-deployment.js' manifest.json
+          grep -q 'installLovableDeploymentRuntime' background/service-worker-entry.js
+
+      - name: Build99 Git Transaction regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build100.json
+          cp release/runtime-package.json /tmp/runtime-package-build100.json
+          trap 'cp /tmp/manifest-build100.json manifest.json; cp /tmp/runtime-package-build100.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.99';m.version_name='2.6 Build 99 · Git Transaction UX';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.99';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build99-git-transaction-ux.test.mjs
+
+      - name: Build98 Guided Autonomy regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build100.json
+          cp release/runtime-package.json /tmp/runtime-package-build100.json
+          trap 'cp /tmp/manifest-build100.json manifest.json; cp /tmp/runtime-package-build100.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.98';m.version_name='2.6 Build 98 · Guided Autonomy + Policy Engine';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.98';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build98-guided-autonomy-policy-engine.test.mjs
+
+      - name: Build97 Change Transactions regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build100.json
+          cp release/runtime-package.json /tmp/runtime-package-build100.json
+          trap 'cp /tmp/manifest-build100.json manifest.json; cp /tmp/runtime-package-build100.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.97';m.version_name='2.6 Build 97 · Change Transactions';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.97';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build97-change-transactions.test.mjs
+
+      - name: Build96 Project Understanding regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build100.json
+          trap 'cp /tmp/manifest-build100.json manifest.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.96';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          NODE
+          node tests/build96-project-understanding-context-map.test.mjs
+
+      - name: Build95 Safe Database regression remains green
+        env:
+          LD_SUCCESSOR_REGRESSION: '1'
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
