@@ -45,12 +45,14 @@ export function classifyPolicyAction({ capability = '', tool = '', input = {}, a
 
 function boundedCodeRule(mode, tool, input, paths) {
   const limit = mode === 'autonomous'
-    ? { paths: 12, edits: 40, creates: 4 }
-    : { paths: 5, edits: 16, creates: 2 };
+    ? { paths: 12, edits: 40, contentChars: 200000 }
+    : { paths: 5, edits: 16, contentChars: 80000 };
   if (!paths.length) return { ok: false, rule: 'CODE_PATH_REQUIRED' };
   if (paths.length > limit.paths) return { ok: false, rule: 'CODE_PATH_LIMIT' };
   if (tool === 'repo.patch_apply' && patchEditCount(input) > limit.edits) return { ok: false, rule: 'PATCH_EDIT_LIMIT' };
-  if (tool === 'repo.write_file' && String(input?.action || '').toLowerCase() === 'create' && paths.length > limit.creates) return { ok: false, rule: 'CREATE_FILE_LIMIT' };
+  if (tool === 'repo.write_file' && String(input?.action || 'update').toLowerCase() !== 'delete' && String(input?.content || '').length > limit.contentChars) {
+    return { ok: false, rule: 'WHOLE_FILE_CONTENT_LIMIT' };
+  }
   return { ok: true, rule: mode === 'autonomous' ? 'BOUNDED_CODE_AUTONOMOUS' : 'BOUNDED_CODE_GUIDED' };
 }
 
