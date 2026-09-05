@@ -105,8 +105,16 @@
 
   async function revertPreview(transactionId, options = {}) {
     const current = await review(transactionId);
-    if (!current?.reversibleOperationId) {
-      const error = new Error('Esta transação ainda não possui um commit reversível no Operation Journal.');
+    const committedWrites = (Array.isArray(current?.operations) ? current.operations : [])
+      .filter(operation => operation?.mode === 'write' && operation?.status === 'ok' && operation?.commitSha);
+    if (committedWrites.length > 1) {
+      const error = new Error('Esta Change Transaction contém múltiplos commits. A Build 97 bloqueia reversão parcial; a orquestração transacional de múltiplos commits pertence à Build 99.');
+      error.code = 'CHANGE_TRANSACTION_MULTI_COMMIT_REVERT_BLOCKED';
+      error.commitCount = committedWrites.length;
+      throw error;
+    }
+    if (!current?.reversibleOperationId || committedWrites.length !== 1) {
+      const error = new Error('Esta transação ainda não possui exatamente um commit reversível no Operation Journal.');
       error.code = 'CHANGE_TRANSACTION_NOT_REVERSIBLE';
       throw error;
     }
@@ -165,6 +173,7 @@
     writeAuthority: false,
     approvalAuthority: false,
     revertUsesReversibleOperations: true,
+    multiCommitRevertFailsClosed: true,
     rawPromptPersistence: false,
     rawSqlPersistence: false,
     rawDiffPersistence: false
