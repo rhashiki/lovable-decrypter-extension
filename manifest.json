@@ -1,94 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.99",
-  "version_name": "2.6 Build 99 · Git Transaction UX",
-  "description": "Canonical Git transaction cards, branch/HEAD awareness, compare, checkpoint evidence and safe full-transaction revert over Guarded Commit and Change Transactions.",
-  "icons": {
-    "16": "assets/icon16.png",
-    "32": "assets/icon32.png",
-    "48": "assets/icon48.png",
-    "128": "assets/icon128.png"
-  },
+  "version": "2.6.100",
+  "version_name": "2.6 Build 100 · Lovable Deployment Adapter",
+  "description": "Explicit fail-closed Lovable deployment adapter with preflight, human approval, HEAD locking, provider verification and separate rollback/redeploy hooks.",
+  "icons": {"16":"assets/icon16.png","32":"assets/icon32.png","48":"assets/icon48.png","128":"assets/icon128.png"},
   "permissions": ["storage","tabs","downloads","unlimitedStorage","alarms","identity"],
-  "host_permissions": [
-    "https://lovable.dev/*",
-    "https://*.lovable.dev/*",
-    "https://api.github.com/*",
-    "https://codeload.github.com/*",
-    "https://generativelanguage.googleapis.com/*",
-    "https://api.supabase.com/*",
-    "https://*.supabase.co/*"
-  ],
+  "host_permissions": ["https://lovable.dev/*","https://*.lovable.dev/*","https://api.github.com/*","https://codeload.github.com/*","https://generativelanguage.googleapis.com/*","https://api.supabase.com/*","https://*.supabase.co/*"],
   "optional_host_permissions": ["https://*/*","http://localhost/*","http://127.0.0.1/*"],
   "background": {"service_worker":"background/service-worker-entry.js","type":"module"},
   "content_scripts": [
-    {
-      "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
-      "js": ["launcher/launcher-runtime.js"],
-      "run_at": "document_start",
-      "all_frames": false
-    },
-    {
-      "matches": ["https://lovable.dev/*", "https://*.lovable.dev/*"],
-      "js": [
-        "content/content.js",
-        "content/integration-callback-bridge.js",
-        "content/integration-readiness-client.js",
-        "content/canonical-integrations-client.js",
-        "content/canonical-project-state-client.js",
-        "content/tool-runtime-client.js",
-        "content/canonical-tool-runtime-client.js",
-        "content/mcp-runtime-client.js",
-        "content/mcp-marketplace-client.js",
-        "content/canonical-mcp-center-client.js",
-        "content/context-engine-client.js",
-        "content/canonical-context-scope-client.js",
-        "content/canonical-project-understanding-client.js",
-        "content/reversible-operations-client.js",
-        "content/continuity-runtime-client.js",
-        "content/canonical-continuity-recovery-client.js",
-        "content/local-agent-orchestrator-client.js",
-        "content/agent-runtime-registry-client.js",
-        "content/portable-skills-client.js",
-        "content/agent-sandbox-client.js",
-        "content/native-agent-session-client.js",
-        "content/canonical-agent-center-client.js",
-        "content/canonical-activity-audit-client.js",
-        "content/canonical-attachments-voice-client.js",
-        "content/canonical-capability-router-client.js",
-        "content/canonical-database-runtime-client.js",
-        "content/canonical-change-transactions-client.js",
-        "content/canonical-autonomy-policy-client.js",
-        "content/canonical-git-transactions-client.js",
-        "content/canonical-command-composer-client.js",
-        "launcher/canonical-runtime-wiring.js",
-        "launcher/canonical-integrations-center.js",
-        "launcher/canonical-project-state.js",
-        "launcher/canonical-tool-runtime.js",
-        "launcher/canonical-context-scope.js",
-        "launcher/canonical-project-understanding.js",
-        "launcher/canonical-mcp-center.js",
-        "launcher/canonical-agent-center.js",
-        "launcher/canonical-continuity-recovery.js",
-        "launcher/canonical-activity-audit.js",
-        "launcher/canonical-command-composer.js",
-        "launcher/canonical-change-transactions.js",
-        "launcher/canonical-guided-autonomy.js",
-        "launcher/canonical-git-transactions.js",
-        "launcher/canonical-attachments-voice.js",
-        "launcher/canonical-capability-router.js"
-      ],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
+    {"matches":["https://lovable.dev/*","https://*.lovable.dev/*"],"js":["launcher/launcher-runtime.js"],"run_at":"document_start","all_frames":false},
+    {"matches":["https://lovable.dev/*","https://*.lovable.dev/*"],"js":[
+      "content/content.js","content/integration-callback-bridge.js","content/integration-readiness-client.js","content/canonical-integrations-client.js","content/canonical-project-state-client.js","content/tool-runtime-client.js","content/canonical-tool-runtime-client.js","content/mcp-runtime-client.js","content/mcp-marketplace-client.js","content/canonical-mcp-center-client.js","content/context-engine-client.js","content/canonical-context-scope-client.js","content/canonical-project-understanding-client.js","content/reversible-operations-client.js","content/continuity-runtime-client.js","content/canonical-continuity-recovery-client.js","content/local-agent-orchestrator-client.js","content/agent-runtime-registry-client.js","content/portable-skills-client.js","content/agent-sandbox-client.js","content/native-agent-session-client.js","content/canonical-agent-center-client.js","content/canonical-activity-audit-client.js","content/canonical-attachments-voice-client.js","content/canonical-capability-router-client.js","content/canonical-database-runtime-client.js","content/canonical-change-transactions-client.js","content/canonical-autonomy-policy-client.js","content/canonical-git-transactions-client.js","content/canonical-lovable-deployment-client.js","content/canonical-command-composer-client.js",
+      "launcher/canonical-runtime-wiring.js","launcher/canonical-integrations-center.js","launcher/canonical-project-state.js","launcher/canonical-tool-runtime.js","launcher/canonical-context-scope.js","launcher/canonical-project-understanding.js","launcher/canonical-mcp-center.js","launcher/canonical-agent-center.js","launcher/canonical-continuity-recovery.js","launcher/canonical-activity-audit.js","launcher/canonical-command-composer.js","launcher/canonical-change-transactions.js","launcher/canonical-guided-autonomy.js","launcher/canonical-git-transactions.js","launcher/canonical-lovable-deployment.js","launcher/canonical-attachments-voice.js","launcher/canonical-capability-router.js"
+    ],"run_at":"document_idle","all_frames":false}
   ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "lovable-decrypter@rhashiki.dev",
-      "strict_min_version": "121.0",
-      "data_collection_permissions": {"required":["authenticationInfo","websiteContent"]}
-    }
-  },
-  "action": {"default_title":"Lovable Decrypter v2.6.99 · Git Transaction UX"}
+  "browser_specific_settings":{"gecko":{"id":"lovable-decrypter@rhashiki.dev","strict_min_version":"121.0","data_collection_permissions":{"required":["authenticationInfo","websiteContent"]}}},
+  "action":{"default_title":"Lovable Decrypter v2.6.100 · Lovable Deployment Adapter"}
 }
