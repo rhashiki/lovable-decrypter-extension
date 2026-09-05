@@ -322,16 +322,18 @@ async function prepare(payload = {}) {
   }
 }
 
-async function loadTicket(id, allowedStatuses = []) {
+async function loadTicket(id, allowedStatuses = [], options = {}) {
   const key = ticketKey(id);
   const stored = await chrome.storage.session.get(key);
   const ticket = stored[key];
-  if (!ticket || ticket.id !== id || ticket.used === true) {
+  const allowUsed = options?.allowUsed === true;
+  const allowExpired = options?.allowExpired === true;
+  if (!ticket || ticket.id !== id || (!allowUsed && ticket.used === true)) {
     const error = new Error('LOVABLE_DEPLOY_TICKET_NOT_FOUND');
     error.code = 'LOVABLE_DEPLOY_TICKET_NOT_FOUND';
     throw error;
   }
-  if (Date.parse(ticket.expiresAt || '') <= Date.now()) {
+  if (!allowExpired && Date.parse(ticket.expiresAt || '') <= Date.now()) {
     await chrome.storage.session.remove(key);
     const error = new Error('LOVABLE_DEPLOY_TICKET_EXPIRED');
     error.code = 'LOVABLE_DEPLOY_TICKET_EXPIRED';
@@ -405,6 +407,7 @@ async function run(payload = {}) {
     throw error;
   }
 
+  let deployOperationId = '';
   try {
     const response = await client.callTool(ticket.serverId, LOVABLE_DEPLOY_TOOL, { project_id: ticket.projectId }, {
       writeApprovalId: ticket.mcpApprovalId,
@@ -412,22 +415,23 @@ async function run(payload = {}) {
       taskId: ticket.taskId,
       timeoutMs: 150000
     });
+    deployOperationId = text(response?.operationId, 180);
     const deploymentResult = deploymentResultFromMcp(response, ticket.projectId);
     if (deploymentResult.projectMatches !== true) {
       const error = new Error('LOVABLE_DEPLOY_RESULT_PROJECT_MISMATCH');
       error.code = 'LOVABLE_DEPLOY_RESULT_PROJECT_MISMATCH';
       throw error;
     }
-    await completeContinuityStep({ taskId: ticket.taskId, idempotencyKey: 'deploy-write', leaseToken: lease.leaseToken, operationId: response.operationId, outputDigest: await sha256Text(JSON.stringify(deploymentFingerprint({ ...ticket, status: 'deployed', liveUrl: deploymentResult.liveUrl }))) });
-    const verification = await verifySuccessfulDeployment(ticket, deploymentResult, response.operationId);
-    const next = { ...ticket, status: verification.verified ? 'verified' : 'deployed_unverified', used: true, operationId: response.operationId, liveUrl: verification.liveUrl || deploymentResult.liveUrl, usedAt: nowIso() };
+    await completeContinuityStep({ taskId: ticket.taskId, idempotencyKey: 'deploy-write', leaseToken: lease.leaseToken, operationId: deployOperationId, outputDigest: await sha256Text(JSON.stringify(deploymentFingerprint({ ...ticket, status: 'deployed', liveUrl: deploymentResult.liveUrl }))) });
+    const verification = await verifySuccessfulDeployment(ticket, deploymentResult, deployOperationId);
+    const next = { ...ticket, status: verification.verified ? 'verified' : 'deployed_unverified', used: true, operationId: deployOperationId, liveUrl: verification.liveUrl || deploymentResult.liveUrl, usedAt: nowIso() };
     await chrome.storage.session.set({ [key]: next });
     await patchChangeTransaction(ticket.transactionId, {
       status: verification.verified ? 'completed' : 'verification_required',
-      links: { operationIds: [response.operationId] },
+      links: { operationIds: [deployOperationId] },
       deployment: {
         provider: 'lovable', transport: 'mcp', serverId: ticket.serverId, projectId: ticket.projectId, taskId: ticket.taskId,
-        ticketId: ticket.id, mcpApprovalId: ticket.mcpApprovalId, expectedCommitSha: ticket.expectedCommitSha, operationId: response.operationId,
+        ticketId: ticket.id, mcpApprovalId: ticket.mcpApprovalId, expectedCommitSha: ticket.expectedCommitSha, operationId: deployOperationId,
         status: verification.verified ? 'verified' : 'deployed_unverified', liveUrl: verification.liveUrl || deploymentResult.liveUrl,
         verified: verification.verified, verificationRequired: !verification.verified
       }
@@ -437,7 +441,7 @@ async function run(payload = {}) {
       build: LOVABLE_DEPLOYMENT_BUILD,
       transactionId: ticket.transactionId,
       taskId: ticket.taskId,
-      operationId: response.operationId,
+      operationId: deployOperationId,
       status: verification.verified ? 'verified' : 'deployed_unverified',
       liveUrl: verification.liveUrl || deploymentResult.liveUrl,
       providerStatus: deploymentResult.providerStatus,
@@ -446,7 +450,9 @@ async function run(payload = {}) {
       rawMcpResultPersisted: false
     });
   } catch (error) {
-    const classification = deploymentOutcomeClassification(error);
+    const classification = deployOperationId
+      ? Object.freeze({ definitive: false, verificationRequired: true, code: 'LOVABLE_DEPLOY_VERIFICATION_REQUIRED' })
+      : deploymentOutcomeClassification(error);
     await failContinuityStep({
       taskId: ticket.taskId,
       idempotencyKey: 'deploy-write',
@@ -454,12 +460,13 @@ async function run(payload = {}) {
       errorCode: classification.code,
       outcomeUnknown: classification.verificationRequired
     }).catch(() => null);
-    const next = { ...ticket, status: classification.verificationRequired ? 'verification_required' : 'failed', operationId: text(error?.operationId, 180), used: classification.verificationRequired !== true, lastErrorCode: classification.code };
+    const operationId = text(error?.operationId || deployOperationId, 180);
+    const next = { ...ticket, status: classification.verificationRequired ? 'verification_required' : 'failed', operationId, used: true, usedAt: nowIso(), lastErrorCode: classification.code };
     await chrome.storage.session.set({ [key]: next });
     await patchChangeTransaction(ticket.transactionId, {
       status: classification.verificationRequired ? 'verification_required' : 'failed',
-      links: error?.operationId ? { operationIds: [text(error.operationId, 180)] } : {},
-      deployment: { status: next.status, operationId: next.operationId, verificationRequired: classification.verificationRequired, verified: false },
+      links: operationId ? { operationIds: [operationId] } : {},
+      deployment: { status: next.status, operationId, verificationRequired: classification.verificationRequired, verified: false },
       lastError: { code: classification.code }
     }).catch(() => null);
     error.code = classification.code;
@@ -471,7 +478,7 @@ async function run(payload = {}) {
 
 async function verify(payload = {}) {
   const id = text(payload?.ticketId, 180);
-  const { ticket } = await loadTicket(id, ['verification_required', 'deployed_unverified']);
+  const { ticket } = await loadTicket(id, ['verification_required', 'deployed_unverified'], { allowUsed: true, allowExpired: true });
   const server = await getMcpServer(ticket.serverId);
   const observed = await observeProject(server, ticket.projectId, ticket.taskId);
   const commitMatches = !ticket.expectedCommitSha || observed.observation.latestCommitSha === ticket.expectedCommitSha;
