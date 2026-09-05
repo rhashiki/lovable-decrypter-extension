@@ -37,6 +37,7 @@ import { installNativeAgentSessionRuntime } from './native-agent-session-runtime
 import { installActivityAuditRuntime } from './activity-audit-runtime.js';
 import { installCapabilityRouterRuntime } from './capability-router-runtime.js';
 import { installChangeTransactionRuntime } from './change-transaction-runtime.js';
+import { installGitTransactionRuntime } from './git-transaction-runtime.js';
 import './service-worker.js';
 
 installCheckpointRuntime();
@@ -75,3 +76,4 @@ installNativeAgentSessionRuntime();
 installActivityAuditRuntime();
 installCapabilityRouterRuntime();
 installChangeTransactionRuntime();
+installGitTransactionRuntime();
