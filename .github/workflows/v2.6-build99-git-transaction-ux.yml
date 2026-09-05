@@ -1,0 +1,113 @@
+name: v2.6 Build 99 · Git Transaction UX
+
+on:
+  push:
+    branches: [v2.6.99-git-transaction-ux]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  git-transaction-ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build99 surface
+        run: |
+          node --check core/git-transaction.js
+          node --check background/git-transaction-runtime.js
+          node --check content/canonical-git-transactions-client.js
+          node --check launcher/canonical-git-transactions.js
+          node --check background/service-worker-entry.js
+
+      - name: Build99 adversarial executable contract
+        run: node tests/build99-git-transaction-ux.test.mjs
+
+      - name: Full transaction span must be exact
+        run: |
+          grep -q 'exactSpan' core/git-transaction.js
+          grep -q 'foreignCommits' core/git-transaction.js
+          grep -q 'missingCommits' core/git-transaction.js
+          grep -q 'partialRevertAllowed: false' core/git-transaction.js background/git-transaction-runtime.js content/canonical-git-transactions-client.js
+          grep -q 'GIT_TRANSACTION_NON_CONTIGUOUS' background/git-transaction-runtime.js
+          grep -q 'GIT_TRANSACTION_MULTI_BRANCH_BLOCKED' background/git-transaction-runtime.js
+
+      - name: Revert is head task and fingerprint locked
+        run: |
+          grep -q 'taskId: computed.taskId' background/git-transaction-runtime.js
+          grep -q 'computed.taskId !== ticket.taskId' background/git-transaction-runtime.js
+          grep -q 'GIT_TRANSACTION_REVERT_TASK_CHANGED' background/git-transaction-runtime.js
+          grep -q 'computed.snapshot.currentHead !== ticket.headSha' background/git-transaction-runtime.js
+          grep -q 'currentFingerprint !== ticket.fingerprint' background/git-transaction-runtime.js
+          grep -q 'payload?.humanDecision !== true' background/git-transaction-runtime.js
+
+      - name: Guarded Commit remains the only Git writer
+        run: |
+          grep -q 'computed.adapter.atomicCommit' background/git-transaction-runtime.js
+          grep -q 'createBranch: false' background/git-transaction-runtime.js
+          grep -q 'createPr: false' background/git-transaction-runtime.js
+          ! grep -n -E '\.createCommit\(|\.updateBranch\(|\.deleteBranch\(' background/git-transaction-runtime.js
+          grep -q 'prepareShadowBuild' core/guarded-commit.js
+          grep -q 'runRegressionSentinel' core/guarded-commit.js
+          grep -q 'runValidationGate' core/guarded-commit.js
+          grep -q 'createCheckpoint' core/guarded-commit.js
+          grep -q 'verifyPublishedCheckpoint' core/guarded-commit.js
+
+      - name: Git projection omits raw patch authority
+        run: |
+          grep -q 'patchIncluded: false' core/git-transaction.js
+          grep -q 'rawPatchDurablePersistence: false' background/git-transaction-runtime.js
+          ! grep -n 'innerHTML' launcher/canonical-git-transactions.js
+          ! grep -n -E 'createCommit|updateBranch|deleteBranch|atomicCommit' content/canonical-git-transactions-client.js launcher/canonical-git-transactions.js
+
+      - name: Manifest and runtime package are Build99
+        run: |
+          grep -q '"version": "2.6.99"' manifest.json
+          grep -q 'Build 99 · Git Transaction UX' manifest.json
+          grep -q '"candidate":"2.6.99"' release/runtime-package.json
+          grep -q 'canonical-git-transactions-client.js' manifest.json release/runtime-package.json
+          grep -q 'canonical-git-transactions.js' manifest.json
+          grep -q 'installGitTransactionRuntime' background/service-worker-entry.js
+
+      - name: Build98 Guided Autonomy regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build99.json
+          cp release/runtime-package.json /tmp/runtime-package-build99.json
+          trap 'cp /tmp/manifest-build99.json manifest.json; cp /tmp/runtime-package-build99.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.98';m.version_name='2.6 Build 98 · Guided Autonomy + Policy Engine';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.98';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build98-guided-autonomy-policy-engine.test.mjs
+
+      - name: Build97 Change Transactions regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build99.json
+          cp release/runtime-package.json /tmp/runtime-package-build99.json
+          trap 'cp /tmp/manifest-build99.json manifest.json; cp /tmp/runtime-package-build99.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.97';m.version_name='2.6 Build 97 · Change Transactions';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.97';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build97-change-transactions.test.mjs
+
+      - name: Build96 Project Understanding regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build99.json
+          trap 'cp /tmp/manifest-build99.json manifest.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.96';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          NODE
+          node tests/build96-project-understanding-context-map.test.mjs
+
+      - name: Build95 Safe Database regression remains green
+        env:
+          LD_SUCCESSOR_REGRESSION: '1'
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
