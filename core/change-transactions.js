@@ -61,6 +61,14 @@ function safeRecovery(recovery = {}) {
   });
 }
 
+function safeError(error = null) {
+  if (!error) return null;
+  return Object.freeze({
+    code: text(error?.code, 180) || 'CHANGE_TRANSACTION_ERROR',
+    messagePersisted: false
+  });
+}
+
 function safeRecord(input = {}) {
   const createdAt = text(input?.createdAt, 80) || nowIso();
   return Object.freeze({
@@ -91,12 +99,13 @@ function safeRecord(input = {}) {
     }),
     database: safeDatabase(input?.database || {}),
     recovery: safeRecovery(input?.recovery || {}),
-    lastError: input?.lastError ? Object.freeze({ code: text(input.lastError.code, 180), message: text(input.lastError.message, 900) }) : null,
+    lastError: safeError(input?.lastError),
     privacy: Object.freeze({
       rawPromptPersisted: false,
       rawSqlPersisted: false,
       rawDiffPersisted: false,
       rawFileContentPersisted: false,
+      errorMessagePersisted: false,
       credentialsPersisted: false
     }),
     authority: Object.freeze({
