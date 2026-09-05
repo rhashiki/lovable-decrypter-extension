@@ -45,6 +45,16 @@
     return api;
   }
 
+  function mixedOrchestration() {
+    const api = window.LovableDecrypterCanonicalMixedOrchestrationApi;
+    if (!api?.build || !api?.approveCode || !api?.approveDatabase || !api?.verifyDatabase || !api?.rehydrate) {
+      const error = new Error('Mixed Code + Database Orchestration client não carregado.');
+      error.code = 'MIXED_ORCHESTRATION_CLIENT_REQUIRED';
+      throw error;
+    }
+    return api;
+  }
+
   function attachmentApi() {
     return window.LovableDecrypterCanonicalAttachmentsVoiceApi || null;
   }
@@ -246,6 +256,14 @@
 
     if (result?.changeTransactionId) {
       await changeTransactions().codeReview(result.changeTransactionId, diff).catch(() => null);
+      if (result?.mixed) {
+        await changeTransactions().databaseResult(result.changeTransactionId, {
+          ticket: result?.databaseProposal?.ticket || null,
+          classification: result?.databaseProposal?.classification || null,
+          project: result?.databaseProposal?.project || null,
+          status: result?.databaseProposal?.ticket?.status || 'prepared'
+        }, { status: 'waiting_mixed_code_approval' }).catch(() => null);
+      }
     }
     return diff;
   }
@@ -357,10 +375,7 @@
     const capabilityRoute = assertResolved(await routeCommand(command));
     if (containsDatabase(capabilityRoute)) {
       if (!databaseOnly(capabilityRoute)) {
-        const error = new Error('Build 95 não executa CODE + DATABASE como se fossem uma transação atômica. Separe as mudanças ou use PLAN.');
-        error.code = 'DATABASE_MIXED_TRANSACTION_NOT_AVAILABLE';
-        error.capabilityRoute = capabilityRoute;
-        throw error;
+        return mixedOrchestration().build(command, capabilityRoute, options);
       }
       return databaseBuild(command, capabilityRoute);
     }
@@ -439,6 +454,26 @@
     return result;
   }
 
+  async function approveMixedCode(changeTransactionId, taskId, proposalDigest, options = {}) {
+    return mixedOrchestration().approveCode(changeTransactionId, taskId, proposalDigest, options);
+  }
+
+  async function approveMixedDatabase(changeTransactionId, options = {}) {
+    return mixedOrchestration().approveDatabase(changeTransactionId, options);
+  }
+
+  async function verifyMixedDatabase(changeTransactionId) {
+    return mixedOrchestration().verifyDatabase(changeTransactionId);
+  }
+
+  async function rehydrateMixed(changeTransactionId, command) {
+    return mixedOrchestration().rehydrate(changeTransactionId, command);
+  }
+
+  function dropMixed(changeTransactionId) {
+    return mixedOrchestration().drop?.(changeTransactionId) || false;
+  }
+
   window.LovableDecrypterCanonicalCommandComposerApi = Object.freeze({
     build: BUILD,
     schema: SCHEMA,
@@ -450,6 +485,11 @@
     approveWrite,
     approveDatabase,
     verifyDatabase,
+    approveMixedCode,
+    approveMixedDatabase,
+    verifyMixedDatabase,
+    rehydrateMixed,
+    dropMixed,
     databaseIntrospect: () => database().introspect(),
     cancelTask: taskId => agent().cancel(String(taskId || '')),
     task: taskId => agent().get(String(taskId || '')),
@@ -459,6 +499,13 @@
     agentBuildCapabilities: AGENT_BUILD_CAPABILITIES,
     databaseRequiresExplicitSql: true,
     databaseMixedAtomicExecution: false,
+    mixedCodeDatabaseOrchestration: true,
+    mixedOrchestrationBuild: 101,
+    mixedSeparateAuthorizationBoundaries: true,
+    mixedCodeAuthorization: 'human-only',
+    mixedDatabaseAuthorization: 'human-only',
+    mixedCodeMustCompleteBeforeDatabase: true,
+    mixedRecoveryUsesGitTransaction: true,
     databaseTicketedWrites: true,
     databaseAutomaticRetry: false,
     capabilityCandidatesAutoActivated: false,

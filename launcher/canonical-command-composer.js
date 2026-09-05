@@ -4,8 +4,8 @@
   if (window.__LD95_CANONICAL_COMMAND_COMPOSER__) return;
   window.__LD95_CANONICAL_COMMAND_COMPOSER__ = true;
 
-  const BUILD = 95;
-  const VERSION = '2.6.95';
+  const BUILD = 101;
+  const VERSION = '2.6.101';
   const MODULE_ID = 'command-composer';
   const HOST_ID = 'lovable-decrypter-launcher';
   const NS = 'http://www.w3.org/2000/svg';
@@ -119,7 +119,10 @@
       building: 'Roteando a capacidade e preparando execução gated…',
       previewing: 'Gerando diff somente-leitura da proposta…',
       waiting_approval: 'Write de código bloqueado. Revise o diff e aprove explicitamente para continuar.',
+      waiting_mixed_code_approval: 'MIXED · CODE 1º: revise e aprove a etapa de código. DATABASE permanece bloqueado.',
       waiting_database_approval: 'Write de banco bloqueado. Revise SQL, risco e projeto antes de aprovar.',
+      waiting_mixed_database_approval: 'MIXED · DATABASE 2º: código concluído; agora revise e aprove o ticket do banco.',
+      mixed_verification_review: 'MIXED · resultado do banco requer revisão de verificação. Nenhum SQL será repetido automaticamente.',
       approving: 'Aprovação vinculada ao write exato · validações em andamento…',
       database_running: 'Ticket aprovado. Executando o SQL exato uma única vez…',
       database_ambiguous: 'Resultado do write é ambíguo. Não repita: use Verificar estado.',
@@ -157,7 +160,7 @@
   function renderProposal(target) {
     const proposal = state.result?.proposal;
     if (!proposal) return;
-    const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'Write aguardando aprovação'));
+    const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', state.result?.mixed ? 'MIXED · CODE 1º · aprovação' : 'Write aguardando aprovação'));
     const card = el('div', 'ld92-card'); card.append(el('b', '', `${text(proposal.tool)} · ${Number(proposal.paths?.length || 0)} path(s)`), el('small', '', text(proposal.reason, 'Proposta gerada pelo agente local.')));
     const badges = el('div', 'ld92-badges'); badges.append(el('span', 'ld92-badge', `DIGEST ${String(proposal.digest || '').slice(0,12)}`), el('span', `ld92-badge ${proposal.destructive ? 'bad' : 'ok'}`, proposal.destructive ? 'DESTRUCTIVE' : 'GATED WRITE'));
     card.appendChild(badges); section.appendChild(card);
@@ -209,10 +212,30 @@
     const actions = el('div', 'ld92-actions');
     const approve = el('button', `ld92-btn ${destructive ? 'warn' : ''}`, destructive ? 'Aprovar + executar DESTRUCTIVE' : 'Aprovar + executar uma vez');
     approve.type = 'button'; approve.dataset.ld92Action = 'db-approve';
-    approve.disabled = state.busy || !ticket.id || (destructive && (!state.dbDestructiveConfirmed || state.dbRecoveryEvidence.trim().length < 8));
+    const mixedLocked = state.result?.mixed && proposal.lockedUntilCodeComplete === true;
+    approve.disabled = state.busy || !ticket.id || mixedLocked || (destructive && (!state.dbDestructiveConfirmed || state.dbRecoveryEvidence.trim().length < 8));
     actions.appendChild(approve);
     section.appendChild(actions);
+    if (mixedLocked) section.appendChild(el('div', 'ld92-note', 'MIXED: DATABASE 2º permanece bloqueado até CODE 1º concluir. Não existe atomicidade ACID entre GitHub e Supabase.'));
     section.appendChild(el('div', 'ld92-note', 'O backend valida o hash deste SQL e consome o ticket antes do write. Timeout/erro ambíguo nunca dispara retry automático.'));
+    target.appendChild(section);
+  }
+
+  function renderMixedStatus(target) {
+    const mixed = state.result?.mixed;
+    if (!mixed) return;
+    const section = el('section', 'ld92-section'); section.appendChild(el('div', 'ld92-title', 'MIXED · orchestration boundary'));
+    const card = el('div', 'ld92-card');
+    card.append(el('b', '', 'CODE 1º → DATABASE 2º'), el('small', '', 'Uma Change Transaction pai; autorizações independentes. Não é uma transação ACID entre GitHub e Supabase.'));
+    const badges = el('div', 'ld92-badges');
+    badges.append(
+      el('span', `ld92-badge ${mixed.codeComplete ? 'ok' : 'warn'}`, mixed.codeComplete ? 'CODE COMPLETE' : 'CODE PENDING'),
+      el('span', `ld92-badge ${mixed.databaseComplete ? 'ok' : 'warn'}`, mixed.databaseComplete ? 'DATABASE COMPLETE' : 'DATABASE LOCKED/GATED'),
+      el('span', 'ld92-badge warn', 'HUMAN × 2'),
+      el('span', 'ld92-badge', 'NO CROSS-PROVIDER ACID')
+    );
+    card.appendChild(badges); section.appendChild(card);
+    section.appendChild(el('div', 'ld92-note', 'Se DATABASE falhar depois do commit de CODE, recovery usa o Git Transaction Revert da Build 99. Resultado ambíguo do banco exige Verify e nunca dispara retry automático.'));
     target.appendChild(section);
   }
 
@@ -250,7 +273,7 @@
     const target = detail(); if (!target || target.dataset.module !== MODULE_ID) return false;
     ensureStyles(); clear(target); head(target);
 
-    const pending = state.phase === 'waiting_approval' || state.phase === 'waiting_database_approval' || state.phase === 'database_ambiguous';
+    const pending = ['waiting_approval','waiting_mixed_code_approval','waiting_database_approval','waiting_mixed_database_approval','database_ambiguous','mixed_verification_review'].includes(state.phase);
     const modes = el('div', 'ld92-modes');
     for (const [mode, label] of [['plan','PLAN · somente leitura'],['build','BUILD · writes aprovados']]) {
       const button = el('button', `ld92-mode${state.mode === mode ? ' active' : ''}`, label); button.type = 'button'; button.dataset.ld92Action = 'mode'; button.dataset.mode = mode; button.disabled = state.busy || pending; modes.appendChild(button);
@@ -265,8 +288,8 @@
 
     target.appendChild(el('div', 'ld92-phase', phaseLabel()));
     if (state.error) target.appendChild(el('div', 'ld92-error', state.error));
-    renderPlan(target); renderProposal(target); renderDatabaseProposal(target); renderDatabaseVerification(target); renderResult(target);
-    target.appendChild(el('div', 'ld92-note', `Build ${BUILD} · CODE usa Agent/Tool Runtime; DATABASE usa ticket Plan → Review → Run. Sem paid/remote fallback e sem auto-approval.`));
+    renderPlan(target); renderMixedStatus(target); renderProposal(target); renderDatabaseProposal(target); renderDatabaseVerification(target); renderResult(target);
+    target.appendChild(el('div', 'ld92-note', `Build ${BUILD} · CODE usa Agent/Tool Runtime; DATABASE usa ticket Plan → Review → Run. MIXED preserva duas autorizações humanas e recovery separado; não promete atomicidade entre provedores.`));
     target.style.height = `${Math.min(Math.max(460, target.scrollHeight + 18), innerHeight - 16)}px`;
     return true;
   }
@@ -276,12 +299,17 @@
     state.taskId = String(result?.run?.taskId || state.taskId || '');
     state.diff = null;
     state.dbVerification = null;
-    if (result?.status === 'waiting_approval' && result?.proposal) {
+    if ((result?.status === 'waiting_approval' || result?.status === 'waiting_mixed_code_approval') && result?.proposal) {
+      const mixedCode = result?.status === 'waiting_mixed_code_approval';
       state.phase = 'previewing'; render();
       state.diff = await api().previewProposal(result);
-      state.phase = 'waiting_approval';
+      state.phase = mixedCode ? 'waiting_mixed_code_approval' : 'waiting_approval';
     } else if (result?.status === 'waiting_database_approval' && result?.databaseProposal) {
       state.phase = 'waiting_database_approval';
+    } else if (result?.status === 'waiting_mixed_database_approval' && result?.databaseProposal) {
+      state.phase = 'waiting_mixed_database_approval';
+    } else if (result?.status === 'mixed_verification_review') {
+      state.phase = 'mixed_verification_review';
     } else if (result?.status === 'completed') state.phase = 'completed';
     else if (result?.status === 'cancelled') state.phase = 'cancelled';
     else state.phase = result?.status === 'stopped' ? 'stopped' : (result?.status || 'completed');
@@ -309,7 +337,10 @@
     if (state.busy || !state.result?.proposal?.digest || !state.taskId) return;
     state.busy = true; state.error = ''; state.phase = 'approving'; render();
     try {
-      await processBuildResult(await api().approveWrite(state.taskId, state.result.proposal.digest, { humanDecision: true }));
+      const next = state.result?.mixed
+        ? await api().approveMixedCode(state.result.changeTransactionId, state.taskId, state.result.proposal.digest, { humanDecision: true })
+        : await api().approveWrite(state.taskId, state.result.proposal.digest, { humanDecision: true });
+      await processBuildResult(next);
     } catch (error) {
       state.phase = 'error'; state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`;
     } finally { state.busy = false; render(); }
@@ -324,13 +355,22 @@
 
     state.busy = true; state.error = ''; state.phase = 'database_running'; render();
     try {
-      const execution = await api().approveDatabase(ticket.id, proposal.sql, {
-        humanDecision: true,
-        destructiveConfirmation: destructive && state.dbDestructiveConfirmed,
-        recoveryEvidence: state.dbRecoveryEvidence
-      });
-      state.result = { ...state.result, status: 'completed', databaseExecution: execution };
-      state.phase = 'completed';
+      if (state.result?.mixed) {
+        const execution = await api().approveMixedDatabase(state.result.changeTransactionId, {
+          humanDecision: true,
+          destructiveConfirmation: destructive && state.dbDestructiveConfirmed,
+          recoveryEvidence: state.dbRecoveryEvidence
+        });
+        await processBuildResult(execution);
+      } else {
+        const execution = await api().approveDatabase(ticket.id, proposal.sql, {
+          humanDecision: true,
+          destructiveConfirmation: destructive && state.dbDestructiveConfirmed,
+          recoveryEvidence: state.dbRecoveryEvidence
+        });
+        state.result = { ...state.result, status: 'completed', databaseExecution: execution };
+        state.phase = 'completed';
+      }
     } catch (error) {
       state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`;
       state.phase = error?.verificationRequired || error?.code === 'DATABASE_WRITE_OUTCOME_AMBIGUOUS' ? 'database_ambiguous' : 'error';
@@ -342,8 +382,14 @@
     if (state.busy || !ticketId) return;
     state.busy = true; state.error = ''; render();
     try {
-      state.dbVerification = await api().verifyDatabase(ticketId);
-      state.phase = 'database_verified';
+      if (state.result?.mixed) {
+        const verified = await api().verifyMixedDatabase(state.result.changeTransactionId);
+        state.dbVerification = verified?.verification || verified;
+        state.phase = 'mixed_verification_review';
+      } else {
+        state.dbVerification = await api().verifyDatabase(ticketId);
+        state.phase = 'database_verified';
+      }
     } catch (error) {
       state.phase = 'error'; state.error = `${error?.code || 'ERRO'} · ${error?.message || error}`;
     } finally { state.busy = false; render(); }
@@ -359,6 +405,8 @@
 
   function reset() {
     if (state.busy) return;
+    const mixedId = state.result?.mixed ? state.result?.changeTransactionId : '';
+    if (mixedId) { try { api()?.dropMixed?.(mixedId); } catch (_) {} }
     Object.assign(state, { command:'', phase:'idle', result:null, diff:null, error:'', taskId:'', dbRecoveryEvidence:'', dbDestructiveConfirmed:false, dbVerification:null }); render();
   }
 
@@ -386,7 +434,7 @@
       event.preventDefault(); event.stopImmediatePropagation();
       const type = action.dataset.ld92Action;
       if (type === 'mode') {
-        const pending = state.phase === 'waiting_approval' || state.phase === 'waiting_database_approval' || state.phase === 'database_ambiguous';
+        const pending = ['waiting_approval','waiting_mixed_code_approval','waiting_database_approval','waiting_mixed_database_approval','database_ambiguous','mixed_verification_review'].includes(state.phase);
         if (!state.busy && !pending) { state.mode = action.dataset.mode === 'build' ? 'build' : 'plan'; state.result = null; state.diff = null; state.error = ''; state.phase = 'idle'; state.dbVerification = null; render(); }
         return;
       }
