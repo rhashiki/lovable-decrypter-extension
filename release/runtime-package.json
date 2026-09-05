@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.97",
+  "candidate":"2.6.98",
   "paths":[
     "manifest.json",
     "assets",
@@ -42,11 +42,12 @@
     "content/canonical-capability-router-client.js",
     "content/canonical-database-runtime-client.js",
     "content/canonical-change-transactions-client.js",
+    "content/canonical-autonomy-policy-client.js",
     "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build97 adds durable sanitized Change Transactions over the existing authoritative engines. The projection references task, approval, operation, database ticket, commit and recovery metadata without persisting raw prompt, raw SQL, raw diff or raw file content. Review is reconstructed from Operation Journal and Continuity; Revert delegates exclusively to Reversible Operations Preview -> explicit human confirmation -> Apply. Database approve/run/verify reconciles projection state by the exact one-time ticket id without changing Database Runtime write semantics. This package metadata does not authorize OTA, GitHub Release, store publication or merge to main."
+  "notes":"Build98 adds a deterministic Guided Autonomy + Policy Engine with Manual, Guided and Autonomous modes. The fixed safety floor cannot be relaxed by client settings: database writes, destructive actions, deploy and Git push remain human-gated; sensitive paths and scope/human-intent conflicts fail closed. Policy-authorized safe code writes still use exact proposal-digest binding, current HEAD, Scope Intelligence, Human Intent, the existing validated approval transaction, Tool Runtime, Continuity and Guarded Commit. Policy authorization is explicitly non-human and cannot accept humanIntentOverrides. This package metadata does not authorize OTA, GitHub Release, store publication or merge to main."
 }
