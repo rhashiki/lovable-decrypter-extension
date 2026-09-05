@@ -1,11 +1,52 @@
 import { DEFAULT_BACKEND_BASE } from '../settings/config.js';
 import { getSettings } from '../storage/settings-store.js';
+import { listChangeTransactions, patchChangeTransaction } from '../core/change-transactions.js';
 
 const PORT_NAME = 'ld2-database-runtime';
 const ENDPOINT = 'ld-database-runtime';
 const ACTIONS = new Set(['status', 'introspect', 'prepare', 'ticket', 'approve', 'run', 'verify']);
 const DEFAULT_TIMEOUT_MS = 70000;
 const WRITE_TIMEOUT_MS = 120000;
+
+const text = (value, max = 180) => String(value ?? '').trim().slice(0, max);
+
+async function reconcileChangeTransaction(action, payload = {}, body = null, error = null) {
+  if (!['approve', 'run', 'verify'].includes(action)) return;
+  const ticketId = text(body?.ticket?.id || body?.ticket_id || payload?.ticketId || payload?.ticket_id);
+  if (!ticketId) return;
+  try {
+    const rows = await listChangeTransactions({ limit: 160 });
+    const tx = rows.find(row => row?.database?.ticketId === ticketId);
+    if (!tx?.id) return;
+    if (error) {
+      await patchChangeTransaction(tx.id, {
+        status: error?.verificationRequired === true ? 'verification_required' : 'failed',
+        database: {
+          ticketId,
+          status: error?.verificationRequired === true ? 'verification_required' : (tx.database?.status || 'prepared'),
+          verificationRequired: error?.verificationRequired === true
+        },
+        lastError: { code: text(error?.code), message: String(error?.message || error || '').slice(0, 900) }
+      });
+      return;
+    }
+    const mappedStatus = action === 'approve' ? 'approved' : action === 'run' ? 'applied' : 'verified';
+    await patchChangeTransaction(tx.id, {
+      status: action === 'run' ? 'completed' : mappedStatus,
+      database: {
+        ticketId,
+        sqlHash: body?.ticket?.sql_hash || body?.ticket?.sqlHash || tx.database?.sqlHash || '',
+        risk: body?.ticket?.risk || tx.database?.risk || '',
+        status: mappedStatus,
+        projectRef: body?.ticket?.project_ref || body?.mappedProject?.projectRef || tx.database?.projectRef || '',
+        projectName: body?.mappedProject?.projectName || tx.database?.projectName || '',
+        verificationRequired: false
+      }
+    });
+  } catch (_) {
+    // Projection reconciliation must never alter Database Runtime success/failure semantics.
+  }
+}
 
 async function requestBackend(action, payload = {}) {
   if (!ACTIONS.has(action)) {
@@ -45,8 +86,10 @@ async function requestBackend(action, payload = {}) {
       error.code = code;
       error.details = body || null;
       error.verificationRequired = body?.verification_required === true;
+      await reconcileChangeTransaction(action, payload, body, error);
       throw error;
     }
+    await reconcileChangeTransaction(action, payload, body, null);
     return body;
   } catch (error) {
     if (error?.name === 'AbortError') {
@@ -55,6 +98,7 @@ async function requestBackend(action, payload = {}) {
         : 'O Database Runtime não respondeu dentro do tempo limite.');
       timeout.code = action === 'run' ? 'DATABASE_WRITE_OUTCOME_AMBIGUOUS' : 'DATABASE_RUNTIME_TIMEOUT';
       timeout.verificationRequired = action === 'run';
+      await reconcileChangeTransaction(action, payload, null, timeout);
       throw timeout;
     }
     throw error;
