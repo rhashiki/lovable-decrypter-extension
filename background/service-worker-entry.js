@@ -26,6 +26,7 @@ import { installScopeIntelligenceRuntime } from './scope-intelligence-runtime.js
 import { installReversibleOperationsRuntime } from './reversible-operations-runtime.js';
 import { installContinuityRuntime } from './continuity-runtime.js';
 import { installLocalModelRuntime } from './local-model-runtime.js';
+import { installAutonomyPolicyRuntime } from './autonomy-policy-runtime.js';
 import { installLocalAgentOrchestrator } from './local-agent-orchestrator.js';
 import { installIntegrationReadinessRuntime } from './integration-readiness-runtime.js';
 import { installIntegrationCallbackRuntime } from './integration-callback-runtime.js';
@@ -63,6 +64,7 @@ installScopeIntelligenceRuntime();
 installReversibleOperationsRuntime();
 installContinuityRuntime();
 installLocalModelRuntime();
+installAutonomyPolicyRuntime();
 installLocalAgentOrchestrator();
 installIntegrationReadinessRuntime();
 installIntegrationCallbackRuntime();
