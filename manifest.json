@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Lovable Decrypter",
-  "version": "2.6.98",
-  "version_name": "2.6 Build 98 · Guided Autonomy + Policy Engine",
-  "description": "Deterministic Manual, Guided and Autonomous policy modes with a fixed safety floor over the existing Scope, Human Intent, Tool Runtime and Continuity gates.",
+  "version": "2.6.99",
+  "version_name": "2.6 Build 99 · Git Transaction UX",
+  "description": "Canonical Git transaction cards, branch/HEAD awareness, compare, checkpoint evidence and safe full-transaction revert over Guarded Commit and Change Transactions.",
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
@@ -60,6 +60,7 @@
         "content/canonical-database-runtime-client.js",
         "content/canonical-change-transactions-client.js",
         "content/canonical-autonomy-policy-client.js",
+        "content/canonical-git-transactions-client.js",
         "content/canonical-command-composer-client.js",
         "launcher/canonical-runtime-wiring.js",
         "launcher/canonical-integrations-center.js",
@@ -74,6 +75,7 @@
         "launcher/canonical-command-composer.js",
         "launcher/canonical-change-transactions.js",
         "launcher/canonical-guided-autonomy.js",
+        "launcher/canonical-git-transactions.js",
         "launcher/canonical-attachments-voice.js",
         "launcher/canonical-capability-router.js"
       ],
@@ -88,5 +90,5 @@
       "data_collection_permissions": {"required":["authenticationInfo","websiteContent"]}
     }
   },
-  "action": {"default_title":"Lovable Decrypter v2.6.98 · Guided Autonomy"}
+  "action": {"default_title":"Lovable Decrypter v2.6.99 · Git Transaction UX"}
 }
