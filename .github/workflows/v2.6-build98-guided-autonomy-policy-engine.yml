@@ -1,0 +1,101 @@
+name: v2.6 Build 98 · Guided Autonomy + Policy Engine
+
+on:
+  push:
+    branches: [v2.6.98-guided-autonomy-policy-engine]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guided-autonomy-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax · Build98 surface
+        run: |
+          node --check core/guided-autonomy-policy.js
+          node --check background/autonomy-policy-runtime.js
+          node --check background/local-agent-orchestrator.js
+          node --check content/canonical-autonomy-policy-client.js
+          node --check launcher/canonical-guided-autonomy.js
+          node --check background/service-worker-entry.js
+
+      - name: Build98 adversarial executable contract
+        run: node tests/build98-guided-autonomy-policy-engine.test.mjs
+
+      - name: Policy Engine has no writer or approval authority
+        run: |
+          grep -q 'writer: false' core/guided-autonomy-policy.js background/autonomy-policy-runtime.js content/canonical-autonomy-policy-client.js
+          grep -q 'approvalAuthority: false' core/guided-autonomy-policy.js background/autonomy-policy-runtime.js content/canonical-autonomy-policy-client.js
+          grep -q 'safetyFloorMutable: false' background/autonomy-policy-runtime.js content/canonical-autonomy-policy-client.js
+          ! grep -n -E 'repo\.write_file|repo\.patch_apply|createCommit|updateBranch|deleteBranch|git push' background/autonomy-policy-runtime.js content/canonical-autonomy-policy-client.js launcher/canonical-guided-autonomy.js
+          ! grep -n 'innerHTML' launcher/canonical-guided-autonomy.js
+
+      - name: Fixed safety floor cannot become AUTO
+        run: |
+          grep -q "\['DATABASE_WRITE','DATABASE_DESTRUCTIVE','GIT_PUSH','DEPLOY','CODE_DELETE'\]" core/guided-autonomy-policy.js
+          grep -q "decision = 'ALWAYS_ASK'" core/guided-autonomy-policy.js
+          grep -q "decision = 'DENY'" core/guided-autonomy-policy.js
+          grep -q 'SENSITIVE_PATH_DENY' core/guided-autonomy-policy.js
+          grep -q 'SCOPE_VIOLATION_DENY' core/guided-autonomy-policy.js
+          grep -q 'HUMAN_INTENT_CONFLICT_DENY' core/guided-autonomy-policy.js
+
+      - name: Policy authorization cannot impersonate a human
+        run: |
+          grep -q "source:authorizationKind==='policy'?'guided-autonomy-policy-v98':'local-agent-v68'" background/local-agent-orchestrator.js
+          grep -q "humanDecision:authorizationKind==='human'" background/local-agent-orchestrator.js
+          grep -q "workerId:kind==='policy'?'policy-v98':'human-decision'" background/local-agent-orchestrator.js
+          grep -q "effectiveOverrides=authorizationKind==='human'" background/local-agent-orchestrator.js
+          grep -q "humanIntentOverrides:kind==='human'?humanIntentOverrides:\[\]" background/local-agent-orchestrator.js
+          ! grep -n -E 'payload\??\.policyDecision|payload\.policyDecision' background/local-agent-orchestrator.js
+
+      - name: Existing write gates remain mandatory
+        run: |
+          grep -q 'localAgentProposalDigest' background/local-agent-orchestrator.js
+          grep -q 'currentHead' background/local-agent-orchestrator.js
+          grep -q 'assertScopeIntelligence' background/local-agent-orchestrator.js
+          grep -q "invokeToolRuntimeAction('invoke'" background/local-agent-orchestrator.js
+          grep -q 'claimContinuityStep' background/local-agent-orchestrator.js
+          grep -q 'scopeIntelligenceHash' background/local-agent-orchestrator.js
+          grep -q 'localAgentProposalDigest:digest' background/local-agent-orchestrator.js
+
+      - name: Manifest and runtime package are Build98
+        run: |
+          grep -q '"version": "2.6.98"' manifest.json
+          grep -q 'Build 98 · Guided Autonomy + Policy Engine' manifest.json
+          grep -q '"candidate":"2.6.98"' release/runtime-package.json
+          grep -q 'canonical-autonomy-policy-client.js' manifest.json release/runtime-package.json
+          grep -q 'canonical-guided-autonomy.js' manifest.json
+          grep -q 'installAutonomyPolicyRuntime' background/service-worker-entry.js
+
+      - name: Build97 Change Transactions regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build98.json
+          cp release/runtime-package.json /tmp/runtime-package-build98.json
+          trap 'cp /tmp/manifest-build98.json manifest.json; cp /tmp/runtime-package-build98.json release/runtime-package.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.97';m.version_name='2.6 Build 97 · Change Transactions';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          const p=JSON.parse(fs.readFileSync('release/runtime-package.json','utf8'));p.candidate='2.6.97';fs.writeFileSync('release/runtime-package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          node tests/build97-change-transactions.test.mjs
+
+      - name: Build96 Project Understanding regression remains green
+        run: |
+          cp manifest.json /tmp/manifest-build98.json
+          trap 'cp /tmp/manifest-build98.json manifest.json' EXIT
+          node - <<'NODE'
+          const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version='2.6.96';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');
+          NODE
+          node tests/build96-project-understanding-context-map.test.mjs
+
+      - name: Build95 Safe Database regression remains green
+        env:
+          LD_SUCCESSOR_REGRESSION: '1'
+        run: node tests/build95-safe-database-plan-review-run.test.mjs
+
+      - name: Local runtime syntax remains green
+        run: python -m py_compile runtime/decrypter-local/ollama-gateway.py
