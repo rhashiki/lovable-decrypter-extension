@@ -8,6 +8,7 @@ const bridgeSource = fs.readFileSync('background/database-runtime.js', 'utf8');
 const backendSource = fs.readFileSync('supabase/functions/ld-database-runtime/index.ts', 'utf8');
 const migrationSource = fs.readFileSync('supabase/migrations/20260904193000_build95_database_write_tickets.sql', 'utf8');
 const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+const mixedSuccessor = process.env.LD_MIXED_SUCCESSOR === '1';
 
 if (process.env.LD_SUCCESSOR_REGRESSION === '1') {
   const [, , patch = '0'] = String(manifest.version || '').split('.');
@@ -81,6 +82,16 @@ context.LovableDecrypterCanonicalChangeTransactionsApi = {
   databaseResult: async () => ({}),
   markError: async () => ({})
 };
+if (mixedSuccessor) {
+  context.LovableDecrypterCanonicalMixedOrchestrationApi = {
+    build: async command => { calls.push(['mixed:build', command]); return { status: 'waiting_mixed_code_approval', mixed: { codeComplete: false }, changeTransactionId: 'mixed-tx-101' }; },
+    approveCode: async () => ({}),
+    approveDatabase: async () => ({}),
+    verifyDatabase: async () => ({}),
+    rehydrate: async () => ({}),
+    drop: () => true
+  };
+}
 context.LovableDecrypterLocalAgent = {
   start: async command => { calls.push(['agent:start', command]); return { status: 'completed', result: { summary: 'ok' } }; },
   approveWrite: async () => ({}), cancel: async () => ({}), get: async () => ({})
@@ -108,10 +119,20 @@ await assert.rejects(
 );
 assert.ok(!calls.some(call => Array.isArray(call) && call[0] === 'db:run'), 'missing SQL must never run');
 
-await assert.rejects(
-  () => api.buildCommand('MIXED_TEST altere código e banco'),
-  error => error?.code === 'DATABASE_MIXED_TRANSACTION_NOT_AVAILABLE'
-);
+if (mixedSuccessor) {
+  calls.length = 0;
+  const mixed = await api.buildCommand('MIXED_TEST altere código e banco\nSQL: create table mixed_demo(id bigint);');
+  assert.equal(mixed.status, 'waiting_mixed_code_approval');
+  assert.equal(api.mixedCodeDatabaseOrchestration, true);
+  assert.equal(api.databaseMixedAtomicExecution, false, 'Build101 must orchestrate without claiming cross-provider atomicity');
+  assert.ok(calls.some(call => Array.isArray(call) && call[0] === 'mixed:build'));
+  assert.ok(!calls.some(call => Array.isArray(call) && call[0] === 'db:run'), 'MIXED preparation must not run SQL through the standalone database path');
+} else {
+  await assert.rejects(
+    () => api.buildCommand('MIXED_TEST altere código e banco'),
+    error => error?.code === 'DATABASE_MIXED_TRANSACTION_NOT_AVAILABLE'
+  );
+}
 
 calls.length = 0;
 await api.buildCommand('CODE_TEST altere apenas o arquivo de código');
