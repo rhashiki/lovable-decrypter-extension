@@ -1,0 +1,38 @@
+name: Build101 internal · wire mixed Composer v2
+
+on:
+  push:
+    branches: [v2.6.101-mixed-code-database-orchestration]
+    paths: [scripts/build101-wire-mixed-composer-v2.py]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply corrected exact Composer patches
+        run: python scripts/build101-wire-mixed-composer-v2.py
+      - name: Validate patched Composer
+        run: |
+          node --check content/canonical-command-composer-client.js
+          node --check launcher/canonical-command-composer.js
+          grep -q 'mixedCodeDatabaseOrchestration: true' content/canonical-command-composer-client.js
+          grep -q 'waiting_mixed_code_approval' launcher/canonical-command-composer.js
+          grep -q 'CODE 1º' launcher/canonical-command-composer.js
+          grep -q 'DATABASE 2º' launcher/canonical-command-composer.js
+      - name: Commit patched Composer
+        run: |
+          if git diff --quiet -- content/canonical-command-composer-client.js launcher/canonical-command-composer.js; then
+            echo 'Expected Composer patch was not produced' >&2
+            exit 1
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add content/canonical-command-composer-client.js launcher/canonical-command-composer.js
+          git commit -m "Build 101: wire mixed Code and Database orchestration into Composer"
+          git push origin HEAD:v2.6.101-mixed-code-database-orchestration
