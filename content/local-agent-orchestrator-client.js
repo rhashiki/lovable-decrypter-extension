@@ -79,7 +79,8 @@
         maxIterations: options.maxIterations,
         explicitPaths: Array.isArray(options.explicitPaths) ? options.explicitPaths : [],
         skills: Array.isArray(options.skills) ? options.skills : [],
-        includeKnowledge: options.includeKnowledge !== false
+        includeKnowledge: options.includeKnowledge !== false,
+        forceHumanApproval: options.forceHumanApproval === true
       }, options.timeoutMs || 600000);
     },
     approveWrite(taskId, proposalDigest, options = {}) {
@@ -101,7 +102,8 @@
         humanIntentOverrides: Array.isArray(options.humanIntentOverrides) ? options.humanIntentOverrides : [],
         explicitPaths: Array.isArray(options.explicitPaths) ? options.explicitPaths : [],
         skills: Array.isArray(options.skills) ? options.skills : [],
-        includeKnowledge: options.includeKnowledge !== false
+        includeKnowledge: options.includeKnowledge !== false,
+        forceHumanApproval: options.forceHumanApproval === true
       }, options.timeoutMs || 600000);
     },
     get(taskId) { return request(AGENT_PORT, 'get', { taskId }, 30000); },
