@@ -31,9 +31,11 @@ const uiSource = fs.readFileSync('launcher/canonical-change-transactions.js', 'u
 const composerSource = fs.readFileSync('content/canonical-command-composer-client.js', 'utf8');
 const serviceWorkerSource = fs.readFileSync('background/service-worker-entry.js', 'utf8');
 const databaseRuntimeSource = fs.readFileSync('background/database-runtime.js', 'utf8');
+const runtimePackage = JSON.parse(fs.readFileSync('release/runtime-package.json', 'utf8'));
 
 assert.equal(manifest.version, '2.6.97');
 assert.match(manifest.version_name, /Build 97 .* Change Transactions/);
+assert.equal(runtimePackage.candidate, '2.6.97');
 const scripts = manifest.content_scripts.flatMap(item => item.js || []);
 const reversibleIndex = scripts.indexOf('content/reversible-operations-client.js');
 const txClientIndex = scripts.indexOf('content/canonical-change-transactions-client.js');
@@ -42,12 +44,14 @@ const txUiIndex = scripts.indexOf('launcher/canonical-change-transactions.js');
 assert.ok(reversibleIndex >= 0 && txClientIndex > reversibleIndex, 'reversible client must load before change transaction client');
 assert.ok(composerIndex > txClientIndex, 'change transaction client must load before composer client');
 assert.ok(txUiIndex > composerIndex, 'change transaction UI must load after canonical APIs');
+assert.ok(runtimePackage.paths.includes('content/canonical-change-transactions-client.js'));
 assert.match(serviceWorkerSource, /installChangeTransactionRuntime/);
 
 const RAW_PROMPT = 'RAW_PROMPT_MUST_NEVER_PERSIST_97';
 const RAW_SQL = 'DROP TABLE raw_sql_must_never_persist_97';
 const RAW_DIFF = '+ RAW_DIFF_MUST_NEVER_PERSIST_97';
 const RAW_FILE = 'RAW_FILE_CONTENT_MUST_NEVER_PERSIST_97';
+const RAW_ERROR = 'RAW_ERROR_ECHO_MUST_NEVER_PERSIST_97';
 
 const created = await createChangeTransaction({
   projectId: 'project-97',
@@ -74,7 +78,8 @@ const created = await createChangeTransaction({
     risk: 'CAUTION',
     status: 'prepared',
     sql: RAW_SQL
-  }
+  },
+  lastError: { code: 'SIMULATED', message: RAW_ERROR }
 });
 
 assert.equal(created.schema, 'ld-change-transaction/1');
@@ -84,9 +89,12 @@ assert.equal(created.privacy.rawPromptPersisted, false);
 assert.equal(created.privacy.rawSqlPersisted, false);
 assert.equal(created.privacy.rawDiffPersisted, false);
 assert.equal(created.privacy.rawFileContentPersisted, false);
+assert.equal(created.privacy.errorMessagePersisted, false);
+assert.equal(created.lastError.code, 'SIMULATED');
+assert.equal(created.lastError.messagePersisted, false);
 
 let serialized = JSON.stringify(local.get(CHANGE_TRANSACTIONS_KEY));
-for (const forbidden of [RAW_PROMPT, RAW_SQL, RAW_DIFF, RAW_FILE]) {
+for (const forbidden of [RAW_PROMPT, RAW_SQL, RAW_DIFF, RAW_FILE, RAW_ERROR]) {
   assert.ok(!serialized.includes(forbidden), `forbidden raw payload persisted: ${forbidden}`);
 }
 assert.ok(serialized.includes('src/App.tsx'), 'safe path metadata should persist');
@@ -97,13 +105,17 @@ const patched = await patchChangeTransaction(created.id, {
   status: 'completed',
   links: { taskId: 'task-97', approvalTransactionIds: ['approval-97'], operationIds: ['operation-97'] },
   database: { ticketId: 'ticket-97', status: 'applied', sql: RAW_SQL },
-  recovery: { status: 'applied', sourceOperationId: 'operation-97', reversalOperationId: 'reversal-97', commitSha: 'd'.repeat(40), direction: 'undo', strategy: 'preserve' }
+  recovery: { status: 'applied', sourceOperationId: 'operation-97', reversalOperationId: 'reversal-97', commitSha: 'd'.repeat(40), direction: 'undo', strategy: 'preserve' },
+  lastError: { code: 'SIMULATED_PATCH', message: `${RAW_SQL} ${RAW_ERROR}` }
 });
 assert.equal(patched.links.taskId, 'task-97');
 assert.equal(patched.database.status, 'applied');
 assert.equal(patched.recovery.sourceOperationId, 'operation-97');
+assert.equal(patched.lastError.code, 'SIMULATED_PATCH');
+assert.equal(patched.lastError.messagePersisted, false);
 serialized = JSON.stringify(local.get(CHANGE_TRANSACTIONS_KEY));
 assert.ok(!serialized.includes(RAW_SQL));
+assert.ok(!serialized.includes(RAW_ERROR));
 assert.equal((await getChangeTransaction(created.id)).id, created.id);
 assert.equal((await listChangeTransactions({ projectId: 'project-97' })).length, 1);
 
@@ -122,12 +134,16 @@ assert.match(runtimeSource, /reversibleOperations: 'revert'/);
 assert.doesNotMatch(runtimeSource, /repo\.write_file|repo\.patch_apply|atomicCommit|createCommit|updateBranch/);
 
 assert.match(clientSource, /CHANGE_TRANSACTION_REVERT_HUMAN_DECISION_REQUIRED/);
+assert.match(clientSource, /CHANGE_TRANSACTION_MULTI_COMMIT_REVERT_BLOCKED/);
+assert.match(clientSource, /committedWrites\.length > 1/);
+assert.match(clientSource, /committedWrites\.length !== 1/);
 assert.match(clientSource, /options\.humanDecision !== true/);
 assert.match(clientSource, /reversible\(\)\.preview/);
 assert.match(clientSource, /reversible\(\)\.apply/);
 assert.match(clientSource, /projectionOnly: true/);
 assert.match(clientSource, /writeAuthority: false/);
 assert.match(clientSource, /approvalAuthority: false/);
+assert.match(clientSource, /multiCommitRevertFailsClosed: true/);
 assert.doesNotMatch(clientSource, /repo\.write_file|repo\.patch_apply|atomicCommit|createCommit|updateBranch/);
 
 assert.match(uiSource, /Review/);
