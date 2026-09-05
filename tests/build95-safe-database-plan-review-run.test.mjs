@@ -74,6 +74,13 @@ context.LovableDecrypterCanonicalDatabaseRuntimeApi = {
   run: async (_id, sql) => { calls.push(['db:run', sql]); return { ticket: { id: '11111111-1111-1111-1111-111111111111', status: 'applied' } }; },
   verify: async () => { calls.push('db:verify'); return { verification_only: true, automatic_retry: false }; }
 };
+context.LovableDecrypterCanonicalChangeTransactionsApi = {
+  create: async () => ({ id: 'change-transaction-successor-regression' }),
+  codeReview: async () => ({}),
+  codeResult: async () => ({}),
+  databaseResult: async () => ({}),
+  markError: async () => ({})
+};
 context.LovableDecrypterLocalAgent = {
   start: async command => { calls.push(['agent:start', command]); return { status: 'completed', result: { summary: 'ok' } }; },
   approveWrite: async () => ({}), cancel: async () => ({}), get: async () => ({})
