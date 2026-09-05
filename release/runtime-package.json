@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.99",
+  "candidate":"2.6.100",
   "paths":[
     "manifest.json",
     "assets",
@@ -44,11 +44,12 @@
     "content/canonical-change-transactions-client.js",
     "content/canonical-autonomy-policy-client.js",
     "content/canonical-git-transactions-client.js",
+    "content/canonical-lovable-deployment-client.js",
     "content/canonical-command-composer-client.js"
   ],
   "excluded_paths":[],
   "forbidden_roots":[".github","benchmark","diagnostic","docs","release","scripts","supabase","tests","ui"],
   "forbidden_paths":["updates/latest.json","updates/release.json"],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build99 adds canonical Git Transaction UX over Change Transactions and the existing Guarded Commit/Checkpoint/Reversible engines. Commit cards expose branch, parent, message, paths and checkpoint evidence without raw patch persistence. Revert is full-transaction only: the runtime proves an exact contiguous base-to-applied commit span with no foreign commits, requires the applied commit to remain an ancestor of current HEAD, rejects sensitive/non-text paths, builds a combined net-diff 3-way preserve preview against current HEAD, binds a short-lived fingerprint/head-lock ticket, requires explicit human confirmation, and writes only through Guarded Commit. Partial revert is never offered as fallback. This package metadata does not authorize OTA, GitHub Release, store publication or merge to main."
+  "notes":"Build100 adds an explicit Lovable Publish / Deployment Adapter using only the official https://mcp.lovable.dev MCP provider contract and deploy_project tool. Preflight locks get_project/deploy_project to the exact Lovable project_id, requires the currently observed Lovable commit to match the canonical Git HEAD when available, and enforces Build98 DEPLOY=ALWAYS_ASK. Each publish uses a one-time MCP write approval, a separate Continuity task with deploy-write retrySafe=false/maxAttempts=1, sanitized Change Transaction metadata and Operation Journal evidence. Any post-write uncertainty becomes verification_required and never triggers deploy_project automatically again. Raw MCP results/tokens are not durably persisted. No private Lovable REST publish endpoint or provider rollback/unpublish capability is invented; redeploy requires a fresh prepare plus explicit human approval. This package metadata does not authorize OTA, GitHub Release, store publication or merge to main."
 }
