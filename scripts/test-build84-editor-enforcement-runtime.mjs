@@ -28,26 +28,11 @@ const context = {
   ld84EditorClean(value, max = 1000) { return String(value ?? '').trim().slice(0, max); },
   ld84EditorSafePath(value) { return String(value ?? '').trim().replace(/\\/g, '/').replace(/^\/+/, ''); },
   async ld84EditorResolveBinding() {
-    return {
-      projectId: 'project-1',
-      repository: 'owner/repo',
-      branch: 'main',
-      supabaseProject: 'supabase-1'
-    };
+    return { projectId: 'project-1', repository: 'owner/repo', branch: 'main', supabaseProject: 'supabase-1' };
   },
-  async ld84EditorRepoSnapshot() {
-    return { headSha: head, treeSha: tree };
-  },
+  async ld84EditorRepoSnapshot() { return { headSha: head, treeSha: tree }; },
   async ld84EditorPlan() {
-    return {
-      baseHeadSha: head,
-      plan: {
-        summary: 'Update one file',
-        relevantFiles: ['src/a.js'],
-        newFiles: [],
-        supabaseRequired: false
-      }
-    };
+    return { baseHeadSha: head, supabaseProject: 'supabase-1', plan: { summary: 'Update one file', relevantFiles: ['src/a.js'], newFiles: [], supabaseRequired: false } };
   },
   async ld84ContextBuild() {
     return {
@@ -63,21 +48,10 @@ const context = {
       }
     };
   },
-  async ld84EditorReadFile(_snapshot, path) {
-    if (path === 'src/a.js') return 'export const before = true;\n';
-    return '';
-  },
+  async ld84EditorReadFile(_snapshot, path) { return path === 'src/a.js' ? 'export const before = true;\n' : ''; },
   async ld84EditorLocalChat(messages) {
     capturedChat = messages;
-    return {
-      model: 'decrypter-local',
-      json: {
-        summary: 'Updated a.js',
-        files: [{ path: 'src/a.js', action: 'update', content: 'export const after = true;\n' }],
-        validation_notes: ['smoke'],
-        supabase_apply_required: false
-      }
-    };
+    return { model: 'decrypter-local', json: { summary: 'Updated a.js', files: [{ path: 'src/a.js', action: 'update', content: 'export const after = true;\n' }], validation_notes: ['smoke'], supabase_apply_required: false } };
   },
   ld84EditorValidateFiles(files) { return files; },
   async ld84EditorSet(value) { storedSession = { ...storedSession, ...value }; },
@@ -96,7 +70,8 @@ const context = {
     order.push('writer');
     writes.push(message);
     return { ok: true, mode: 'applied', commitSha: 'c'.repeat(40) };
-  }
+  },
+  async ld84EditorResponse() { return null; }
 };
 context.globalThis = context;
 vm.createContext(context);
@@ -120,17 +95,7 @@ assert.equal(shadow.contextEvidence.headSha, head);
 
 context.ld84ScopeEvaluate = async () => {
   order.push('scope-block');
-  return {
-    ok: true,
-    report: {
-      allowed: false,
-      schema: 'ld-scope-intelligence/2',
-      enforcement: 'fail-closed-before-write',
-      humanIntent: { policy: 'USER_EDIT > AI_EDIT' },
-      warnings: [],
-      violations: [{ code: 'outside-approved-plan' }]
-    }
-  };
+  return { ok: true, report: { allowed: false, schema: 'ld-scope-intelligence/2', enforcement: 'fail-closed-before-write', humanIntent: { policy: 'USER_EDIT > AI_EDIT' }, warnings: [], violations: [{ code: 'outside-approved-plan' }] } };
 };
 await assert.rejects(
   () => context.ld84EditorApply({ shadowId: build.shadowId, decision: 'skip' }),
@@ -142,17 +107,7 @@ assert.deepEqual(order, ['scope-block']);
 order.length = 0;
 context.ld84ScopeEvaluate = async () => {
   order.push('scope');
-  return {
-    ok: true,
-    report: {
-      allowed: true,
-      schema: 'ld-scope-intelligence/2',
-      enforcement: 'fail-closed-before-write',
-      humanIntent: { policy: 'USER_EDIT > AI_EDIT' },
-      warnings: [],
-      violations: []
-    }
-  };
+  return { ok: true, report: { allowed: true, schema: 'ld-scope-intelligence/2', enforcement: 'fail-closed-before-write', humanIntent: { policy: 'USER_EDIT > AI_EDIT' }, warnings: [], violations: [] } };
 };
 const applied = await context.ld84EditorApply({ shadowId: build.shadowId, decision: 'skip' });
 assert.equal(applied.ok, true);
