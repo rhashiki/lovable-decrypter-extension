@@ -147,12 +147,37 @@ async function connectionRow(sb: any, licenseId: string, deviceHash: string) {
   if (!data) throw new Error('SUPABASE_NOT_CONNECTED');
   return data;
 }
+function validateProjectRef(value: unknown) {
+  const ref = String(value || '').trim();
+  if (!/^[a-z0-9]{8,32}$/i.test(ref)) throw new Error('PROJECT_REF_INVALID');
+  return ref;
+}
+async function assertSupabaseProjectSelected(sb: any, auth: any, projectRef: string) {
+  const connection = await connectionRow(sb, auth.licenseId, auth.deviceHash);
+  if (Array.isArray(connection.selected_projects)) {
+    const selected = new Set(connection.selected_projects.map((value: unknown) => String(value || '').trim()).filter(Boolean));
+    if (!selected.has(projectRef)) throw new Error('SUPABASE_PROJECT_NOT_SELECTED');
+  }
+  return connection;
+}
+async function assertGithubRepositorySelected(sb: any, auth: any, repository: string) {
+  const { data, error } = await sb.from('ld_github_installations')
+    .select('selected_repositories')
+    .eq('license_id', auth.licenseId)
+    .maybeSingle();
+  if (error) throw new Error('GITHUB_INSTALLATION_READ_FAILED');
+  if (!data) throw new Error('GITHUB_NOT_CONNECTED');
+  if (Array.isArray(data.selected_repositories)) {
+    const selected = new Set(data.selected_repositories.map((value: unknown) => String(value || '').trim()).filter(Boolean));
+    if (!selected.has(repository)) throw new Error('GITHUB_REPOSITORY_NOT_SELECTED');
+  }
+}
 function basicAuth(clientId: string, secret: string) {
   return `Basic ${btoa(`${clientId}:${secret}`)}`;
 }
-async function refreshSupabaseAccess(sb: any, auth: any) {
+async function refreshSupabaseAccess(sb: any, auth: any, suppliedConnection: any = null) {
   const config = await getOAuthConfig(sb);
-  const connection = await connectionRow(sb, auth.licenseId, auth.deviceHash);
+  const connection = suppliedConnection || await connectionRow(sb, auth.licenseId, auth.deviceHash);
   const refreshToken = await getSecret(sb, String(connection.refresh_secret_name));
   const clientSecret = await getSecret(sb, 'LD_SUPABASE_OAUTH_CLIENT_SECRET');
   const response = await fetch(`${API_BASE}/oauth/token`, {
@@ -194,6 +219,22 @@ async function management(accessToken: string, path: string, options: RequestIni
     throw error;
   } finally {
     clearTimeout(timer);
+  }
+}
+function historyRows(data: any) {
+  return Array.isArray(data) ? data : Array.isArray(data?.migrations) ? data.migrations : [];
+}
+async function migrationApiPreflight(sb: any, auth: any, projectRefInput: unknown) {
+  const projectRef = validateProjectRef(projectRefInput);
+  const connection = await assertSupabaseProjectSelected(sb, auth, projectRef);
+  const accessToken = await refreshSupabaseAccess(sb, auth, connection);
+  try {
+    const history = historyRows(await management(accessToken, `/projects/${encodeURIComponent(projectRef)}/database/migrations`));
+    return { projectRef, accessToken, history };
+  } catch (error) {
+    const message = String((error as Error)?.message || error);
+    if (/SUPABASE_MANAGEMENT_HTTP_(402|403|404)/.test(message)) throw new Error('SUPABASE_MIGRATIONS_API_UNAVAILABLE');
+    throw error;
   }
 }
 async function githubInstallationToken(auth: any) {
@@ -259,8 +300,9 @@ function cleanExpectedMigrations(value: unknown) {
     return { ...descriptor, expectedDigest: digest };
   }).sort((a, b) => a.path.localeCompare(b.path));
 }
-async function verifyGitSource(auth: any, body: any) {
+async function verifyGitSource(sb: any, auth: any, body: any) {
   const repo = parseRepository(body.repository);
+  await assertGithubRepositorySelected(sb, auth, repo.repository);
   const branch = String(body.branch || '').trim();
   const commitSha = String(body.commit_sha || '').trim().toLowerCase();
   if (!branch || branch.length > 180) throw new Error('BRANCH_INVALID');
@@ -278,15 +320,12 @@ async function verifyGitSource(auth: any, body: any) {
     const sql = decodeGithubFile(file, item.path);
     totalBytes += enc.encode(sql).byteLength;
     if (totalBytes > MAX_TOTAL_BYTES) throw new Error('MIGRATIONS_TOTAL_TOO_LARGE');
-    const digest = await sha(sql);
-    if (digest !== item.expectedDigest) throw new Error(`MIGRATION_DIGEST_MISMATCH:${item.path}`);
-    const historyName = `${item.stem}__ld84_${digest.slice(0, 16)}`;
-    prepared.push({ ...item, digest, sql, historyName });
+    const migrationDigest = await sha(sql);
+    if (migrationDigest !== item.expectedDigest) throw new Error(`MIGRATION_DIGEST_MISMATCH:${item.path}`);
+    const historyName = `${item.stem}__ld84_${migrationDigest.slice(0, 16)}`;
+    prepared.push({ ...item, digest: migrationDigest, sql, historyName });
   }
   return { repo, branch, commitSha, prepared };
-}
-function historyRows(data: any) {
-  return Array.isArray(data) ? data : Array.isArray(data?.migrations) ? data.migrations : [];
 }
 function historyDecision(history: any[], migration: any) {
   const exact = history.find(row => String(row?.name || '') === migration.historyName);
@@ -298,8 +337,8 @@ function historyDecision(history: any[], migration: any) {
   if (ambiguous) throw new Error(`MIGRATION_HISTORY_CONFLICT:${migration.path}`);
   return { state: 'pending', version: '' };
 }
-async function applyMigrations(accessToken: string, projectRef: string, prepared: any[]) {
-  const history = historyRows(await management(accessToken, `/projects/${encodeURIComponent(projectRef)}/database/migrations`));
+async function applyMigrations(accessToken: string, projectRef: string, prepared: any[], initialHistory: any[] = []) {
+  const history = [...initialHistory];
   const applied: any[] = [];
   const skipped: any[] = [];
   for (const migration of prepared) {
@@ -341,12 +380,27 @@ Deno.serve(async req => {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || 'status').toLowerCase();
     if (action === 'status') {
+      const projectRefRaw = String(body.project_ref || '').trim();
+      let migrationApiReady: boolean | null = null;
+      let projectRef: string | null = null;
+      let historyCount: number | null = null;
+      if (projectRefRaw) {
+        const preflight = await migrationApiPreflight(sb, auth, projectRefRaw);
+        migrationApiReady = true;
+        projectRef = preflight.projectRef;
+        historyCount = preflight.history.length;
+      }
       return json({
         ok: true,
         schema: SCHEMA,
         build: BUILD,
         protocol: trust.protocol,
         authority: 'server',
+        project_ref: projectRef,
+        migration_api_ready: migrationApiReady,
+        migration_history_count: historyCount,
+        selected_project_enforced: true,
+        selected_repository_enforced: true,
         policy: {
           git_commit_required_before_supabase: true,
           git_branch_head_must_equal_commit: true,
@@ -364,11 +418,10 @@ Deno.serve(async req => {
     }
     if (action !== 'apply') return json({ ok: false, code: 'UNKNOWN_ACTION' }, 400);
     if (body?.approval?.explicit !== true || String(body?.approval?.surface || '') !== 'editor-direct-review') throw new Error('EXPLICIT_APPROVAL_REQUIRED');
-    const projectRef = String(body.project_ref || '').trim();
-    if (!/^[a-z0-9]{8,32}$/i.test(projectRef)) throw new Error('PROJECT_REF_INVALID');
-    const source = await verifyGitSource(auth, body);
-    const accessToken = await refreshSupabaseAccess(sb, auth);
-    const result = await applyMigrations(accessToken, projectRef, source.prepared);
+    const projectRef = validateProjectRef(body.project_ref);
+    const source = await verifyGitSource(sb, auth, body);
+    const preflight = await migrationApiPreflight(sb, auth, projectRef);
+    const result = await applyMigrations(preflight.accessToken, projectRef, source.prepared, preflight.history);
     if (!result.ok) {
       return json({
         ok: false,
@@ -398,13 +451,16 @@ Deno.serve(async req => {
       skipped: result.skipped,
       migration_history: true,
       idempotency: 'history-name+source-digest',
-      source_verified_from_git: true
+      source_verified_from_git: true,
+      selected_project_enforced: true,
+      selected_repository_enforced: true
     });
   } catch (error) {
     const code = String((error as Error)?.message || 'INTERNAL_ERROR');
     console.error('ld-editor-supabase-apply', code);
-    const authish = /^(KEY_|DEVICE_|ENTITLEMENT_|TRUST_|EXPLICIT_APPROVAL)/.test(code);
+    const authish = /^(KEY_|DEVICE_|ENTITLEMENT_|TRUST_|EXPLICIT_APPROVAL|SUPABASE_PROJECT_NOT_SELECTED|GITHUB_REPOSITORY_NOT_SELECTED)/.test(code);
+    const conflictish = /^(SUPABASE_MIGRATIONS_API_UNAVAILABLE|SUPABASE_NOT_CONNECTED|GITHUB_NOT_CONNECTED)/.test(code);
     const clientish = /^(REPOSITORY_|BRANCH_|COMMIT_|MIGRATION_|MIGRATIONS_|PROJECT_REF|GITHUB_HEAD_CHANGED)/.test(code);
-    return json({ ok: false, schema: SCHEMA, build: BUILD, code }, authish ? 403 : clientish ? 400 : 500);
+    return json({ ok: false, schema: SCHEMA, build: BUILD, code }, authish ? 403 : conflictish ? 409 : clientish ? 400 : 500);
   }
 });
