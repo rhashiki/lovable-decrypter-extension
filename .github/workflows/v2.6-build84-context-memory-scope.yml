@@ -1,0 +1,52 @@
+name: v2.6 Build84 Context Memory Scope
+
+on:
+  push:
+    branches:
+      - v2.6.84-context-memory-scope
+    paths:
+      - 'manifest.json'
+      - 'release/runtime-package.json'
+      - 'background/context-intelligence-runtime-v84.js'
+      - 'background/build84-service-worker.js'
+      - 'launcher/context-intelligence-v84.js'
+      - 'supabase/functions/ld-memory-engine/index.ts'
+      - 'scripts/test-build84-context-memory-scope.mjs'
+      - '.github/workflows/v2.6-build84-context-memory-scope.yml'
+  pull_request:
+    paths:
+      - 'manifest.json'
+      - 'release/runtime-package.json'
+      - 'background/context-intelligence-runtime-v84.js'
+      - 'background/build84-service-worker.js'
+      - 'launcher/context-intelligence-v84.js'
+      - 'supabase/functions/ld-memory-engine/index.ts'
+      - 'scripts/test-build84-context-memory-scope.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check background/context-intelligence-runtime-v84.js
+          node --check launcher/context-intelligence-v84.js
+          node --check background/build84-service-worker.js
+      - name: Build84.6 contract
+        run: node scripts/test-build84-context-memory-scope.mjs
+      - name: Clean runtime invariants
+        shell: bash
+        run: |
+          ! grep -R "MutationObserver" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          ! grep -R "setInterval(" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          ! grep -R "chrome.alarms" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          grep -F "ld-runtime-bus/1" supabase/functions/ld-memory-engine/index.ts
+          grep -F "USER_EDIT > AI_EDIT" background/context-intelligence-runtime-v84.js
+          grep -F "fail-closed-before-write" background/context-intelligence-runtime-v84.js
