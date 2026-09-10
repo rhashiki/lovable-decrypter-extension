@@ -1,0 +1,101 @@
+{
+  "schema": "ld-build-checkpoint/1",
+  "project": "Lovable Decrypter",
+  "version": "2.6.84",
+  "phase": "84.6",
+  "status": "CANDIDATE_READY_FOR_BROWSER_HOMOLOGATION",
+  "validated_for_release": false,
+  "merged_to_main": false,
+  "branch": "v2.6.84-context-memory-scope",
+  "candidate": {
+    "commit_sha": "60680066482c78d62f37e63a782e70730609b6a7",
+    "workflow": ".github/workflows/v2.6-build84-context-homologation.yml",
+    "workflow_run_id": 34514640069,
+    "workflow_run_conclusion": "success",
+    "artifact_id": 10167162158,
+    "artifact_name": "Lovable-Decrypter-v2.6.84-context-memory-scope-homologation",
+    "artifact_actions_digest": "sha256:1197deef794e8b4eeee5528ed7aa0627121cfacb4e4262b93546f6902ca54d4e",
+    "inner_zip": "Lovable-Decrypter-v2.6.84-context-memory-scope-homologation.zip",
+    "inner_zip_sha256": "0852c001bc037e6ed562d2f69e00eee00fec18f2164786d685b7bfa4acbc4421",
+    "inner_zip_entries": 33,
+    "artifact_expires_at": "2026-09-24T18:29:30Z"
+  },
+  "ci": {
+    "build84_6_contract_run_id": 34514408104,
+    "build84_6_contract_head_sha": "401d62264a0be7f763529bf0e9007231e373d096",
+    "build84_6_contract_conclusion": "success",
+    "candidate_packaging_run_id": 34514640069,
+    "candidate_packaging_conclusion": "success"
+  },
+  "supabase_backend": {
+    "project_ref": "kkzxxnfxgrouhkzyszxs",
+    "function": "ld-editor-supabase-apply",
+    "function_id": "7c8d3573-04ea-42a9-b2a9-9f0151e1d3e7",
+    "status": "ACTIVE",
+    "version": 1,
+    "verify_jwt": false,
+    "custom_authentication": "license+device+trust",
+    "deployment_sha256": "21b7d694a7d47f36668c1ea5d15a8fc1eb50c043a9fc1ac7b76a7e39c74c5040"
+  },
+  "runtime_contract": {
+    "flow": [
+      "Context Pack",
+      "Shadow Build",
+      "Scope Intelligence",
+      "explicit review",
+      "GitHub commit",
+      "Supabase migrations when required",
+      "GitHub HEAD post-commit verification"
+    ],
+    "scope_fail_closed_before_write": true,
+    "human_intent_policy": "USER_EDIT > AI_EDIT",
+    "skip_cannot_bypass_scope": true,
+    "supabase_git_first": true,
+    "supabase_only_new_versioned_migrations": true,
+    "supabase_raw_sql_client_apply": false,
+    "supabase_seed_auto_apply": false,
+    "supabase_edge_function_auto_deploy": false,
+    "supabase_database_query_fallback": false,
+    "supabase_retry_repeats_git": false,
+    "github_post_commit_exact_head_verification": true,
+    "github_head_proves_lovable_preview": false,
+    "lovable_preview_automatic_verification": false,
+    "lovable_private_api_used": false,
+    "lovable_session_token_scraping": false
+  },
+  "independent_artifact_inspection": {
+    "inner_zip_sha256_matches_declared": true,
+    "manifest_at_zip_root": true,
+    "manifest_version": "2.6.84",
+    "service_worker": "background/build84-service-worker.js",
+    "critical_runtime_files_present": true,
+    "forbidden_legacy_roots_present": false,
+    "private_lovable_api_surface_present": false,
+    "firebase_session_scraping_surface_present": false
+  },
+  "browser_homologation": {
+    "required": true,
+    "completed": false,
+    "must_test": [
+      "Extension loads on lovable.dev without breaking the native shell",
+      "FAB -> Rail -> Flyout -> Detail remains the single UI authority",
+      "Account, license and Trust activation",
+      "GitHub and Supabase resource binding",
+      "Plan produces ZERO WRITE",
+      "Shadow Build includes Context Pack as evidence-only",
+      "Scope blocks an out-of-plan edit before the first Git write",
+      "Git-only Apply creates one commit and post-commit HEAD verification confirms the exact repository, branch and SHA",
+      "Supabase-required plan creates a new supabase/migrations/*.sql file",
+      "Supabase preflight blocks an unselected or migration-API-unavailable project before review",
+      "GitHub + Supabase explicit approval is required",
+      "Successful GitHub + Supabase path applies the committed migration",
+      "Git failure leaves Supabase untouched and restores the Shadow",
+      "Supabase failure after Git preserves the commit and creates recovery state",
+      "Supabase retry does not create a second Git commit",
+      "Lovable preview is inspected manually after Git commit; GitHub HEAD alone is not accepted as proof of preview sync"
+    ]
+  },
+  "next_gate": "BROWSER_HOMOLOGATION",
+  "do_not_advance_to": "84.7",
+  "notes": "This checkpoint freezes the exact browser-homologation candidate. A later checkpoint/documentation commit on the branch does not change the candidate ZIP commit SHA above. Do not merge or release until browser homologation passes."
+}
