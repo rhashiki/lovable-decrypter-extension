@@ -5,6 +5,7 @@ import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder, TextDecoder } from 'node:util';
 
 const source = fs.readFileSync('background/editor-context-scope-enforcement-v84.js', 'utf8');
+const preflightSource = fs.readFileSync('background/editor-supabase-preflight-enforcement-v84.js', 'utf8');
 const head = 'a'.repeat(40);
 const commit = 'c'.repeat(40);
 const migrationPath = 'supabase/migrations/20260910180000_add_profiles_index.sql';
@@ -16,6 +17,7 @@ let scopeAllowed = true;
 let brokerMode = 'success';
 let writerCalls = 0;
 let brokerApplyCalls = 0;
+let preflightCalls = 0;
 const order = [];
 
 const chrome = { storage: { session: { area: 'session' }, local: { area: 'local' } } };
@@ -30,7 +32,11 @@ const context = {
   Headers,
   TextEncoder,
   TextDecoder,
-  crypto: { ...webcrypto, randomUUID },
+  crypto: {
+    subtle: webcrypto.subtle,
+    getRandomValues: webcrypto.getRandomValues.bind(webcrypto),
+    randomUUID
+  },
   setTimeout,
   clearTimeout,
   chrome,
@@ -50,6 +56,11 @@ const context = {
   },
   async ld84EditorSet(value, area) {
     replaceStoreFor(area, { ...storeFor(area), ...value });
+  },
+  async ld84EditorRemove(keys, area) {
+    const store = { ...storeFor(area) };
+    for (const key of keys) delete store[key];
+    replaceStoreFor(area, store);
   },
   async ld84EditorResolveBinding() {
     return { projectId: 'project-1', repository: 'owner/repo', branch: 'main', supabaseProject: 'abcdefghijklmnopqrst' };
@@ -122,11 +133,35 @@ const context = {
   },
   async ld84EditorResponse() { return null; },
   async fetch(url, options = {}) {
-    assert.equal(String(url), 'https://backend.test/functions/v1/ld-editor-supabase-apply');
+    const target = String(url);
     const body = JSON.parse(String(options.body || '{}'));
+
+    if (target === 'https://kkzxxnfxgrouhkzyszxs.supabase.co/functions/v1/ld-integration-selection') {
+      preflightCalls += 1;
+      assert.equal(body.action, 'get');
+      assert.equal(body.integration, 'github');
+      return new Response(JSON.stringify({ ok: true, integration: 'github', mode: 'selected', selected: ['owner/repo'] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
+    const isTestBroker = target === 'https://backend.test/functions/v1/ld-editor-supabase-apply';
+    const isRealBrokerSurface = target === 'https://kkzxxnfxgrouhkzyszxs.supabase.co/functions/v1/ld-editor-supabase-apply';
+    assert.ok(isTestBroker || isRealBrokerSurface, `unexpected backend target: ${target}`);
     assert.equal(options.headers['x-decrypter-trust'], 'trust-token');
     assert.equal(options.headers['x-decrypter-client-protocol'], 'ld-runtime-bus/1');
-    if (body.action === 'status') return new Response(JSON.stringify({ ok: true, schema: 'ld-editor-supabase-apply/1', migration_api_ready: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+
+    if (body.action === 'status') {
+      preflightCalls += 1;
+      if (isRealBrokerSurface) assert.equal(body.project_ref, 'abcdefghijklmnopqrst');
+      return new Response(JSON.stringify({
+        ok: true,
+        schema: 'ld-editor-supabase-apply/1',
+        project_ref: 'abcdefghijklmnopqrst',
+        migration_api_ready: true,
+        migration_history_count: 3,
+        selected_project_enforced: true,
+        selected_repository_enforced: true
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
     if (body.action === 'apply') {
       brokerApplyCalls += 1;
       order.push('broker-apply');
@@ -146,12 +181,23 @@ const context = {
 context.globalThis = context;
 vm.createContext(context);
 vm.runInContext(source, context, { filename: 'editor-context-scope-enforcement-v84.js' });
+vm.runInContext(preflightSource, context, { filename: 'editor-supabase-preflight-enforcement-v84.js' });
+
+assert.equal(context.LovableDecrypterEditorSupabasePreflightV84.migrationApiRequiredBeforeReview, true);
+assert.equal(context.LovableDecrypterEditorSupabasePreflightV84.selectedSupabaseProjectRequired, true);
+assert.equal(context.LovableDecrypterEditorSupabasePreflightV84.selectedGithubRepositoryRequired, true);
 
 const build = await context.ld84EditorBuild({ command: 'Crie o índice no Supabase' });
 assert.equal(build.ok, true);
 assert.equal(build.supabaseApplyRequired, true);
 assert.equal(build.applyBlocked, false);
 assert.deepEqual(Array.from(build.supabaseMigrations, item => item.path), [migrationPath]);
+assert.equal(build.supabasePreflight.migrationApiReady, true);
+assert.equal(build.supabasePreflight.projectRef, 'abcdefghijklmnopqrst');
+assert.equal(build.supabasePreflight.repository, 'owner/repo');
+assert.equal(build.supabasePreflight.supabaseSelectionVerified, true);
+assert.equal(build.supabasePreflight.githubSelectionVerified, true);
+assert.ok(preflightCalls >= 3, 'base broker status + project-aware broker preflight + GitHub selection preflight must run');
 const shadowKey = `ld84_editor_shadow_${build.shadowId}`;
 assert.equal(sessionStore[shadowKey].supabaseApplyPolicy, 'git-first-commit-pinned-migrations');
 
@@ -207,4 +253,4 @@ assert.equal(complete.mode, 'applied_with_supabase');
 assert.equal(complete.supabaseApply.ok, true);
 assert.deepEqual(order, ['scope', 'writer', 'broker-apply'], 'even skip decision must preserve Scope → Git → Supabase order');
 
-console.log('Build84.6 Git-first Supabase recovery smoke: PASS');
+console.log('Build84.6 Git-first Supabase recovery + resource preflight smoke: PASS');
