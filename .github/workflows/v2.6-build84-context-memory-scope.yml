@@ -10,6 +10,7 @@ on:
       - 'background/context-intelligence-runtime-v84.js'
       - 'background/editor-context-scope-enforcement-v84.js'
       - 'background/editor-supabase-preflight-enforcement-v84.js'
+      - 'background/editor-post-commit-verification-v84.js'
       - 'background/build84-service-worker.js'
       - 'launcher/context-intelligence-v84.js'
       - 'launcher/editor-direct-authority-v84.js'
@@ -18,6 +19,7 @@ on:
       - 'scripts/test-build84-context-memory-scope.mjs'
       - 'scripts/test-build84-editor-enforcement-runtime.mjs'
       - 'scripts/test-build84-editor-supabase-runtime.mjs'
+      - 'scripts/test-build84-post-commit-verification.mjs'
       - '.github/workflows/v2.6-build84-context-memory-scope.yml'
   pull_request:
     paths:
@@ -26,6 +28,7 @@ on:
       - 'background/context-intelligence-runtime-v84.js'
       - 'background/editor-context-scope-enforcement-v84.js'
       - 'background/editor-supabase-preflight-enforcement-v84.js'
+      - 'background/editor-post-commit-verification-v84.js'
       - 'background/build84-service-worker.js'
       - 'launcher/context-intelligence-v84.js'
       - 'launcher/editor-direct-authority-v84.js'
@@ -34,6 +37,7 @@ on:
       - 'scripts/test-build84-context-memory-scope.mjs'
       - 'scripts/test-build84-editor-enforcement-runtime.mjs'
       - 'scripts/test-build84-editor-supabase-runtime.mjs'
+      - 'scripts/test-build84-post-commit-verification.mjs'
 
 permissions:
   contents: read
@@ -51,23 +55,27 @@ jobs:
           node --check background/context-intelligence-runtime-v84.js
           node --check background/editor-context-scope-enforcement-v84.js
           node --check background/editor-supabase-preflight-enforcement-v84.js
+          node --check background/editor-post-commit-verification-v84.js
           node --check launcher/context-intelligence-v84.js
           node --check launcher/editor-direct-authority-v84.js
           node --check background/build84-service-worker.js
           node --check scripts/test-build84-editor-enforcement-runtime.mjs
           node --check scripts/test-build84-editor-supabase-runtime.mjs
+          node --check scripts/test-build84-post-commit-verification.mjs
       - name: Build84.6 contract
         run: node scripts/test-build84-context-memory-scope.mjs
       - name: Editor enforcement runtime smoke
         run: node scripts/test-build84-editor-enforcement-runtime.mjs
       - name: Git-first Supabase recovery smoke
         run: node scripts/test-build84-editor-supabase-runtime.mjs
+      - name: Post-commit verification smoke
+        run: node scripts/test-build84-post-commit-verification.mjs
       - name: Clean runtime invariants
         shell: bash
         run: |
-          ! grep -E "new[[:space:]]+MutationObserver[[:space:]]*\(|MutationObserver[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
-          ! grep -E "setInterval[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
-          ! grep -E "chrome\.alarms" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
+          ! grep -E "new[[:space:]]+MutationObserver[[:space:]]*\(|MutationObserver[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js background/editor-post-commit-verification-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
+          ! grep -E "setInterval[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js background/editor-post-commit-verification-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
+          ! grep -E "chrome\.alarms" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js background/editor-supabase-preflight-enforcement-v84.js background/editor-post-commit-verification-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
           grep -F "ld-runtime-bus/1" supabase/functions/ld-memory-engine/index.ts
           grep -F "USER_EDIT > AI_EDIT" background/context-intelligence-runtime-v84.js
           grep -F "fail-closed-before-write" background/context-intelligence-runtime-v84.js
@@ -79,6 +87,12 @@ jobs:
           grep -F "selectedSupabaseProjectRequired: true" background/editor-supabase-preflight-enforcement-v84.js
           grep -F "selectedGithubRepositoryRequired: true" background/editor-supabase-preflight-enforcement-v84.js
           grep -F "failedPreflightDiscardsShadow: true" background/editor-supabase-preflight-enforcement-v84.js
+          grep -F "GITHUB_HEAD_DOES_NOT_PROVE_LOVABLE_PREVIEW" background/editor-post-commit-verification-v84.js
+          grep -F "lovablePrivateApiUsed: false" background/editor-post-commit-verification-v84.js
+          grep -F "lovableSessionTokenScraping: false" background/editor-post-commit-verification-v84.js
+          ! grep -F "api.lovable.dev" background/editor-post-commit-verification-v84.js
+          ! grep -F "firebaseLocalStorageDb" background/editor-post-commit-verification-v84.js
+          ! grep -F "/gitsync" background/editor-post-commit-verification-v84.js
           grep -F "/database/migrations" supabase/functions/ld-editor-supabase-apply/index.ts
           ! grep -F "/database/query" supabase/functions/ld-editor-supabase-apply/index.ts
           ! grep -F "functions/deploy" supabase/functions/ld-editor-supabase-apply/index.ts
