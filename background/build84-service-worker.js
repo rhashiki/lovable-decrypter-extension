@@ -5,7 +5,8 @@ importScripts(
   'supabase-project-manager-runtime-v84.js',
   'supabase-project-rename-runtime-v84.js',
   'github-sync-runtime-v84.js',
-  'gemini-provider-runtime-v84.js'
+  'gemini-provider-runtime-v84.js',
+  'context-intelligence-runtime-v84.js'
 );
 
 Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
@@ -17,6 +18,9 @@ Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
     supabaseProjectRename: true,
     githubSyncHistory: true,
     geminiOptionalProvider: true,
+    contextPack: true,
+    projectBrainMemory: true,
+    scopeIntelligence: true,
     continuousPolling: false,
     globalObservers: false
   }),
