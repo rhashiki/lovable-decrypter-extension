@@ -11,9 +11,12 @@ on:
       - 'background/editor-context-scope-enforcement-v84.js'
       - 'background/build84-service-worker.js'
       - 'launcher/context-intelligence-v84.js'
+      - 'launcher/editor-direct-authority-v84.js'
       - 'supabase/functions/ld-memory-engine/index.ts'
+      - 'supabase/functions/ld-editor-supabase-apply/index.ts'
       - 'scripts/test-build84-context-memory-scope.mjs'
       - 'scripts/test-build84-editor-enforcement-runtime.mjs'
+      - 'scripts/test-build84-editor-supabase-runtime.mjs'
       - '.github/workflows/v2.6-build84-context-memory-scope.yml'
   pull_request:
     paths:
@@ -23,9 +26,12 @@ on:
       - 'background/editor-context-scope-enforcement-v84.js'
       - 'background/build84-service-worker.js'
       - 'launcher/context-intelligence-v84.js'
+      - 'launcher/editor-direct-authority-v84.js'
       - 'supabase/functions/ld-memory-engine/index.ts'
+      - 'supabase/functions/ld-editor-supabase-apply/index.ts'
       - 'scripts/test-build84-context-memory-scope.mjs'
       - 'scripts/test-build84-editor-enforcement-runtime.mjs'
+      - 'scripts/test-build84-editor-supabase-runtime.mjs'
 
 permissions:
   contents: read
@@ -43,21 +49,29 @@ jobs:
           node --check background/context-intelligence-runtime-v84.js
           node --check background/editor-context-scope-enforcement-v84.js
           node --check launcher/context-intelligence-v84.js
+          node --check launcher/editor-direct-authority-v84.js
           node --check background/build84-service-worker.js
           node --check scripts/test-build84-editor-enforcement-runtime.mjs
+          node --check scripts/test-build84-editor-supabase-runtime.mjs
       - name: Build84.6 contract
         run: node scripts/test-build84-context-memory-scope.mjs
       - name: Editor enforcement runtime smoke
         run: node scripts/test-build84-editor-enforcement-runtime.mjs
+      - name: Git-first Supabase recovery smoke
+        run: node scripts/test-build84-editor-supabase-runtime.mjs
       - name: Clean runtime invariants
         shell: bash
         run: |
-          ! grep -E "new[[:space:]]+MutationObserver[[:space:]]*\(|MutationObserver[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js
-          ! grep -E "setInterval[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js
-          ! grep -E "chrome\.alarms" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js
+          ! grep -E "new[[:space:]]+MutationObserver[[:space:]]*\(|MutationObserver[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
+          ! grep -E "setInterval[[:space:]]*\(" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
+          ! grep -E "chrome\.alarms" background/context-intelligence-runtime-v84.js background/editor-context-scope-enforcement-v84.js launcher/context-intelligence-v84.js launcher/editor-direct-authority-v84.js
           grep -F "ld-runtime-bus/1" supabase/functions/ld-memory-engine/index.ts
           grep -F "USER_EDIT > AI_EDIT" background/context-intelligence-runtime-v84.js
           grep -F "fail-closed-before-write" background/context-intelligence-runtime-v84.js
           grep -F "await ld84ContextBuild" background/editor-context-scope-enforcement-v84.js
           grep -F "await ld84ScopeEvaluate" background/editor-context-scope-enforcement-v84.js
-          grep -F "await ld84EditorApplyBase84(message)" background/editor-context-scope-enforcement-v84.js
+          grep -F "gitResult = await ld84EditorApplyBase84(message)" background/editor-context-scope-enforcement-v84.js
+          grep -F "await applySupabaseAfterGit(shadow, gitResult, recoveryId)" background/editor-context-scope-enforcement-v84.js
+          grep -F "/database/migrations" supabase/functions/ld-editor-supabase-apply/index.ts
+          ! grep -F "/database/query" supabase/functions/ld-editor-supabase-apply/index.ts
+          ! grep -F "functions/deploy" supabase/functions/ld-editor-supabase-apply/index.ts
