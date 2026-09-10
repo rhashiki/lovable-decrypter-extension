@@ -13,6 +13,7 @@ on:
       - 'launcher/context-intelligence-v84.js'
       - 'supabase/functions/ld-memory-engine/index.ts'
       - 'scripts/test-build84-context-memory-scope.mjs'
+      - 'scripts/test-build84-editor-enforcement-runtime.mjs'
       - '.github/workflows/v2.6-build84-context-memory-scope.yml'
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - 'launcher/context-intelligence-v84.js'
       - 'supabase/functions/ld-memory-engine/index.ts'
       - 'scripts/test-build84-context-memory-scope.mjs'
+      - 'scripts/test-build84-editor-enforcement-runtime.mjs'
 
 permissions:
   contents: read
@@ -42,8 +44,11 @@ jobs:
           node --check background/editor-context-scope-enforcement-v84.js
           node --check launcher/context-intelligence-v84.js
           node --check background/build84-service-worker.js
+          node --check scripts/test-build84-editor-enforcement-runtime.mjs
       - name: Build84.6 contract
         run: node scripts/test-build84-context-memory-scope.mjs
+      - name: Editor enforcement runtime smoke
+        run: node scripts/test-build84-editor-enforcement-runtime.mjs
       - name: Clean runtime invariants
         shell: bash
         run: |
