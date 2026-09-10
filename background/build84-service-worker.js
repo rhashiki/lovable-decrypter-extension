@@ -8,7 +8,8 @@ importScripts(
   'gemini-provider-runtime-v84.js',
   'context-intelligence-runtime-v84.js',
   'editor-context-scope-enforcement-v84.js',
-  'editor-supabase-preflight-enforcement-v84.js'
+  'editor-supabase-preflight-enforcement-v84.js',
+  'editor-post-commit-verification-v84.js'
 );
 
 Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
@@ -25,8 +26,11 @@ Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
     scopeIntelligence: true,
     editorContextScopeEnforcement: true,
     editorSupabasePreflightEnforcement: true,
+    editorPostCommitVerification: true,
     scopeRequiredBeforeWrite: true,
     resourcePreflightRequiredBeforeReview: true,
+    githubHeadRequiredAfterCommit: true,
+    lovablePreviewAutomaticVerification: false,
     continuousPolling: false,
     globalObservers: false
   }),
