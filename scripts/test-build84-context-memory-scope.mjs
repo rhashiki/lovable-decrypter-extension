@@ -40,8 +40,9 @@ assert.match(runtime, /LD84_CONTEXT_MAX_CODE_BYTES = 150000/);
 assert.match(runtime, /rawPromptPersisted:\s*false/);
 assert.match(runtime, /retrievedMemoryAuthority:\s*'evidence-only'/);
 assert.match(runtime, /modelStateAuthority:\s*false/);
-assert.match(runtime, /\.env/);
-assert.match(runtime, /\.pem/);
+assert.match(runtime, /function ld84ContextSensitivePath/);
+assert(runtime.includes('\\.env'), 'sensitive-path policy must reject .env files');
+assert(runtime.includes('pem|key|p12|pfx'), 'sensitive-path policy must reject private credential file extensions');
 assert.match(runtime, /ld84\.context\.build/);
 assert.match(runtime, /ld84\.scope\.evaluate/);
 
