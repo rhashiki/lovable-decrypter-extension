@@ -26,6 +26,7 @@
     "background/gemini-provider-runtime-v84.js",
     "background/context-intelligence-runtime-v84.js",
     "background/editor-context-scope-enforcement-v84.js",
+    "background/editor-supabase-preflight-enforcement-v84.js",
     "background/build84-service-worker.js"
   ],
   "excluded_paths":[],
@@ -48,5 +49,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Context Pack is now injected into Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence is mandatory before the original Editor Direct writer is invoked; USER_EDIT > AI_EDIT, approved-plan checks and broad-rewrite detection fail closed before any Git blob write, and skip-approval cannot bypass Scope. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. Memory Engine accepts ld-runtime-bus/1 while retaining legacy 2.4.21 compatibility and signed license/device/trust checks. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
+  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Context Pack is injected into Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence is mandatory before the original Editor Direct writer is invoked; USER_EDIT > AI_EDIT, approved-plan checks and broad-rewrite detection fail closed before any Git blob write, and skip-approval cannot bypass Scope. Supabase writes use only commit-pinned new migration files after Git succeeds. Before a Supabase-required Shadow is returned for review, the resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. Failed preflight discards the Shadow. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
 }
