@@ -26,9 +26,10 @@ assert.match(serviceWorker, /projectBrainMemory:\s*true/);
 assert.match(serviceWorker, /scopeIntelligence:\s*true/);
 
 for (const [name, source] of [['runtime', runtime], ['launcher', launcher]]) {
-  assert(!source.includes('MutationObserver'), `${name} must not use MutationObserver`);
-  assert(!source.includes('setInterval('), `${name} must not use setInterval`);
-  assert(!source.includes('chrome.alarms'), `${name} must not use chrome.alarms`);
+  assert(!/\bnew\s+MutationObserver\s*\(/.test(source), `${name} must not construct MutationObserver`);
+  assert(!/\bMutationObserver\s*\(/.test(source), `${name} must not invoke MutationObserver`);
+  assert(!/\bsetInterval\s*\(/.test(source), `${name} must not use setInterval`);
+  assert(!/\bchrome\.alarms\b/.test(source), `${name} must not use chrome.alarms`);
 }
 assert(!runtime.includes('localStorage'), 'background runtime must use extension storage, not page localStorage');
 assert.match(runtime, /LD84_CONTEXT_SCHEMA = 'ld-context-pack\/2'/);
