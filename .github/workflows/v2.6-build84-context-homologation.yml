@@ -1,0 +1,218 @@
+name: v2.6 Build84.6 Browser Homologation Candidate
+
+on:
+  push:
+    branches:
+      - v2.6.84-context-memory-scope
+    paths:
+      - 'manifest.json'
+      - 'release/runtime-package.json'
+      - 'assets/**'
+      - 'launcher/**'
+      - 'background/**'
+      - 'supabase/functions/ld-memory-engine/**'
+      - 'supabase/functions/ld-editor-supabase-apply/**'
+      - 'scripts/test-build84-context-memory-scope.mjs'
+      - 'scripts/test-build84-editor-enforcement-runtime.mjs'
+      - 'scripts/test-build84-editor-supabase-runtime.mjs'
+      - 'scripts/test-build84-post-commit-verification.mjs'
+      - '.github/workflows/v2.6-build84-context-homologation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pin candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "v2.6.84-context-memory-scope"
+          test "$(node -p "require('./manifest.json').version")" = "2.6.84"
+          test "$(node -p "require('./release/runtime-package.json').candidate")" = "2.6.84"
+          echo "CANDIDATE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Run Build84.6 gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-build84-context-memory-scope.mjs
+          node scripts/test-build84-editor-enforcement-runtime.mjs
+          node scripts/test-build84-editor-supabase-runtime.mjs
+          node scripts/test-build84-post-commit-verification.mjs
+
+      - name: Syntax check shipped JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const cp = require('child_process');
+          const pkg = require('./release/runtime-package.json');
+          const files = [];
+          function walk(path) {
+            const st = fs.lstatSync(path);
+            if (st.isSymbolicLink()) throw new Error(`Symlink forbidden in runtime package: ${path}`);
+            if (st.isDirectory()) {
+              for (const name of fs.readdirSync(path)) walk(`${path}/${name}`);
+            } else files.push(path);
+          }
+          for (const path of pkg.paths) walk(path);
+          for (const file of files.filter(file => file.endsWith('.js'))) {
+            cp.execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
+          }
+          NODE
+
+      - name: Build allowlisted staging tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build84-homologation-stage
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const pkg = require('./release/runtime-package.json');
+          const stage = 'build84-homologation-stage';
+          const sensitive = new Set((pkg.forbidden_extensions || []).map(x => String(x).toLowerCase()));
+          const forbiddenPaths = new Set(pkg.forbidden_paths || []);
+
+          function copyEntry(src) {
+            const normalized = src.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+            if (!normalized || normalized.startsWith('/') || normalized.split('/').includes('..')) throw new Error(`Unsafe package path: ${src}`);
+            if (forbiddenPaths.has(normalized)) throw new Error(`Allowlist contains forbidden path: ${normalized}`);
+            const st = fs.lstatSync(normalized);
+            if (st.isSymbolicLink()) throw new Error(`Symlink forbidden: ${normalized}`);
+            const dest = path.join(stage, normalized);
+            if (st.isDirectory()) {
+              fs.mkdirSync(dest, { recursive: true });
+              for (const name of fs.readdirSync(normalized)) copyEntry(`${normalized}/${name}`);
+              return;
+            }
+            if (!st.isFile()) throw new Error(`Unsupported runtime entry: ${normalized}`);
+            if (sensitive.has(path.extname(normalized).toLowerCase())) throw new Error(`Sensitive extension forbidden: ${normalized}`);
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.copyFileSync(normalized, dest);
+          }
+
+          fs.mkdirSync(stage, { recursive: true });
+          for (const allowed of pkg.paths) copyEntry(allowed);
+          NODE
+
+      - name: Verify candidate containment
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="build84-homologation-stage"
+          test -f "$STAGE/manifest.json"
+          test ! -e "$STAGE/release"
+          test ! -e "$STAGE/scripts"
+          test ! -e "$STAGE/tests"
+          test ! -e "$STAGE/supabase"
+          test ! -e "$STAGE/content"
+          test ! -e "$STAGE/ui"
+          test ! -e "$STAGE/core"
+          test ! -e "$STAGE/github"
+          test ! -e "$STAGE/storage"
+          test ! -e "$STAGE/tools"
+          test ! -e "$STAGE/updates"
+          test ! -e "$STAGE/.github"
+
+          for required in \
+            manifest.json \
+            launcher/launcher-runtime.js \
+            launcher/editor-direct-authority-v84.js \
+            launcher/context-intelligence-v84.js \
+            background/editor-direct-runtime-v84.js \
+            background/context-intelligence-runtime-v84.js \
+            background/editor-context-scope-enforcement-v84.js \
+            background/editor-supabase-preflight-enforcement-v84.js \
+            background/editor-post-commit-verification-v84.js \
+            background/github-sync-runtime-v84.js \
+            background/build84-service-worker.js; do
+            test -f "$STAGE/$required"
+          done
+
+          for forbidden in \
+            content/lovable-sync-verifier.js \
+            content/composer-bridge-v3.js \
+            content/composer-guardian.js \
+            background/service-worker-entry.js \
+            background/canonical-runtime-entry.js \
+            launcher/canonical-runtime-client.js; do
+            test ! -e "$STAGE/$forbidden"
+          done
+
+          ! find "$STAGE" -type l -print -quit | grep -q .
+          ! find "$STAGE" -type f \( -iname '*.pem' -o -iname '*.key' -o -iname '*.p12' -o -iname '*.pfx' \) -print -quit | grep -q .
+          ! grep -R -E --exclude='*.map' 'api\.lovable\.dev|firebaseLocalStorageDb|firebase:authUser:|/gitsync|/git-sync' "$STAGE" >/tmp/forbidden-lovable-surface.txt
+
+          node <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('build84-homologation-stage/manifest.json','utf8'));
+          if (m.version !== '2.6.84') throw new Error(`Unexpected manifest version ${m.version}`);
+          if (m.background?.service_worker !== 'background/build84-service-worker.js') throw new Error('Build84 service worker is not canonical');
+          const scripts = (m.content_scripts || []).flatMap(entry => entry.js || []);
+          if (!scripts.includes('launcher/context-intelligence-v84.js')) throw new Error('Context launcher missing');
+          if (scripts.some(p => p.startsWith('content/') || p.startsWith('ui/'))) throw new Error('Legacy content/ui runtime returned');
+          NODE
+
+      - name: Create homologation ZIP and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="Lovable-Decrypter-v2.6.84-context-memory-scope-homologation.zip"
+          rm -f "$ZIP" "$ZIP.sha256" "${ZIP%.zip}.manifest.txt"
+          (
+            cd build84-homologation-stage
+            zip -X -qr "../$ZIP" .
+          )
+          unzip -Z1 "$ZIP" | LC_ALL=C sort > "${ZIP%.zip}.manifest.txt"
+          test "$(grep -Ec '^manifest\.json$' "${ZIP%.zip}.manifest.txt" || true)" -eq 1
+          test "$(grep -Ec '\.zip$' "${ZIP%.zip}.manifest.txt" || true)" -eq 0
+          sha256sum "$ZIP" | tee "$ZIP.sha256"
+          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=Lovable-Decrypter-v2.6.84-context-memory-scope-homologation" >> "$GITHUB_ENV"
+
+      - name: Candidate metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > build84-homologation-candidate.json <<JSON
+          {
+            "schema": "ld-browser-homologation-candidate/1",
+            "version": "2.6.84",
+            "phase": "84.6",
+            "branch": "v2.6.84-context-memory-scope",
+            "commit_sha": "${CANDIDATE_SHA}",
+            "status": "CANDIDATE_READY_FOR_BROWSER_HOMOLOGATION",
+            "release": false,
+            "merge_to_main": false,
+            "automatic_lovable_preview_verification": false,
+            "manual_browser_homologation_required": true,
+            "artifact": "${ZIP_NAME}",
+            "sha256_file": "${ZIP_NAME}.sha256"
+          }
+          JSON
+
+      - name: Upload Build84.6 homologation candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            ${{ env.ZIP_NAME }}
+            ${{ env.ZIP_NAME }}.sha256
+            Lovable-Decrypter-v2.6.84-context-memory-scope-homologation.manifest.txt
+            build84-homologation-candidate.json
+          if-no-files-found: error
+          retention-days: 14
