@@ -7,6 +7,8 @@ const pkg = JSON.parse(read('release/runtime-package.json'));
 const serviceWorker = read('background/build84-service-worker.js');
 const runtime = read('background/context-intelligence-runtime-v84.js');
 const enforcement = read('background/editor-context-scope-enforcement-v84.js');
+const preflight = read('background/editor-supabase-preflight-enforcement-v84.js');
+const postCommit = read('background/editor-post-commit-verification-v84.js');
 const editorUi = read('launcher/editor-direct-authority-v84.js');
 const launcher = read('launcher/context-intelligence-v84.js');
 const memory = read('supabase/functions/ld-memory-engine/index.ts');
@@ -15,19 +17,44 @@ const supabaseBroker = read('supabase/functions/ld-editor-supabase-apply/index.t
 const requiredPackagePaths = [
   'launcher/context-intelligence-v84.js',
   'background/context-intelligence-runtime-v84.js',
-  'background/editor-context-scope-enforcement-v84.js'
+  'background/editor-context-scope-enforcement-v84.js',
+  'background/editor-supabase-preflight-enforcement-v84.js',
+  'background/editor-post-commit-verification-v84.js'
 ];
 for (const path of requiredPackagePaths) assert(pkg.paths.includes(path), `runtime-package missing ${path}`);
 assert.equal(manifest.version, '2.6.84');
 for (const path of requiredPackagePaths.filter(path => path.startsWith('launcher/'))) assert(manifest.content_scripts[0].js.includes(path), `manifest missing ${path}`);
+assert(pkg.forbidden_paths.includes('content/lovable-sync-verifier.js'), 'legacy Lovable Firebase sync verifier must remain forbidden');
 
 const contextImport = serviceWorker.indexOf("'context-intelligence-runtime-v84.js'");
 const enforcementImport = serviceWorker.indexOf("'editor-context-scope-enforcement-v84.js'");
+const preflightImport = serviceWorker.indexOf("'editor-supabase-preflight-enforcement-v84.js'");
+const postCommitImport = serviceWorker.indexOf("'editor-post-commit-verification-v84.js'");
 assert(contextImport >= 0, 'service worker must load context runtime');
 assert(enforcementImport > contextImport, 'editor enforcement must load after context runtime');
-for (const token of ['contextPack: true','projectBrainMemory: true','scopeIntelligence: true','editorContextScopeEnforcement: true','scopeRequiredBeforeWrite: true']) assert(serviceWorker.includes(token), `service worker invariant missing: ${token}`);
+assert(preflightImport > enforcementImport, 'resource preflight must load after editor enforcement');
+assert(postCommitImport > preflightImport, 'post-commit verification must load last');
+for (const token of [
+  'contextPack: true',
+  'projectBrainMemory: true',
+  'scopeIntelligence: true',
+  'editorContextScopeEnforcement: true',
+  'editorSupabasePreflightEnforcement: true',
+  'editorPostCommitVerification: true',
+  'scopeRequiredBeforeWrite: true',
+  'resourcePreflightRequiredBeforeReview: true',
+  'githubHeadRequiredAfterCommit: true',
+  'lovablePreviewAutomaticVerification: false'
+]) assert(serviceWorker.includes(token), `service worker invariant missing: ${token}`);
 
-for (const [name, source] of [['runtime', runtime], ['enforcement', enforcement], ['launcher', launcher], ['editorUi', editorUi]]) {
+for (const [name, source] of [
+  ['runtime', runtime],
+  ['enforcement', enforcement],
+  ['preflight', preflight],
+  ['postCommit', postCommit],
+  ['launcher', launcher],
+  ['editorUi', editorUi]
+]) {
   assert(!/\bnew\s+MutationObserver\s*\(/.test(source), `${name} must not construct MutationObserver`);
   assert(!/\bMutationObserver\s*\(/.test(source), `${name} must not invoke MutationObserver`);
   assert(!/\bsetInterval\s*\(/.test(source), `${name} must not use setInterval`);
@@ -85,6 +112,31 @@ assert(enforcement.includes("status: 'git_applied_pending_supabase'"), 'Git succ
 assert(!/skipScope|bypassScope|scopeDisabled/i.test(enforcement), 'enforcement must expose no Scope bypass switch');
 
 for (const token of [
+  "const SCHEMA = 'ld-editor-supabase-preflight-enforcement/1'",
+  "action: 'status'",
+  'project_ref: projectRef',
+  'migration_api_ready !== true',
+  'selected_project_enforced !== true',
+  "integration: 'github'",
+  'GITHUB_REPOSITORY_NOT_SELECTED',
+  'failedPreflightDiscardsShadow: true'
+]) assert(preflight.includes(token), `resource preflight invariant missing: ${token}`);
+
+for (const token of [
+  "const SCHEMA = 'ld-editor-post-commit-verification/1'",
+  'await ld84GhsRefresh()',
+  "reason: repositoryMatches && branchMatches && shaMatches ? 'GITHUB_HEAD_CONFIRMED' : 'GITHUB_HEAD_MISMATCH'",
+  "reason: 'GITHUB_POST_COMMIT_READ_FAILED'",
+  "reason: LOVABLE_REASON",
+  "invariant: 'GITHUB_HEAD_DOES_NOT_PROVE_LOVABLE_PREVIEW'",
+  'lovablePreviewAutomaticVerification: false',
+  'lovablePrivateApiUsed: false',
+  'lovableSessionTokenScraping: false',
+  'manualBrowserHomologationRequired: true'
+]) assert(postCommit.includes(token), `post-commit invariant missing: ${token}`);
+for (const forbidden of ['api.lovable.dev','firebaseLocalStorageDb','firebase:authUser:','/gitsync','/git-sync']) assert(!postCommit.includes(forbidden), `post-commit runtime must not use private Lovable surface: ${forbidden}`);
+
+for (const token of [
   "const SCHEMA = 'ld-editor-supabase-apply/1'",
   "const CLIENT_PROTOCOL = 'ld-runtime-bus/1'",
   'x-decrypter-trust',
@@ -100,7 +152,9 @@ for (const token of [
   'raw_sql_from_client: false',
   'seed_sql_auto_apply: false',
   'edge_function_auto_deploy: false',
-  'query_fallback: false'
+  'query_fallback: false',
+  'SUPABASE_PROJECT_NOT_SELECTED',
+  'GITHUB_REPOSITORY_NOT_SELECTED'
 ]) assert(supabaseBroker.includes(token), `Supabase broker invariant missing: ${token}`);
 assert(!supabaseBroker.includes('/database/query'), 'schema Apply must never fall back to arbitrary database/query');
 assert(!/seed\.sql[^\n]*management\(/i.test(supabaseBroker), 'seed.sql must never be auto-applied');
@@ -131,4 +185,4 @@ assert.match(launcher, /stopImmediatePropagation\(\)/);
 assert.match(launcher, /Gerar Context Pack/);
 assert.match(launcher, /Human Intent Locks ativos/);
 
-console.log('Build84.6 Context/Memory/Scope + Git-first Supabase Apply: static contract PASS');
+console.log('Build84.6 Context/Memory/Scope + Git-first Supabase + post-commit verification: static contract PASS');
