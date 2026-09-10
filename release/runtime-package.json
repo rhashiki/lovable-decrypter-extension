@@ -25,6 +25,7 @@
     "background/github-sync-runtime-v84.js",
     "background/gemini-provider-runtime-v84.js",
     "background/context-intelligence-runtime-v84.js",
+    "background/editor-context-scope-enforcement-v84.js",
     "background/build84-service-worker.js"
   ],
   "excluded_paths":[],
@@ -47,5 +48,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Adds an event-driven Context Pack surface backed by the bound GitHub repository plus trusted Project Brain memory, and a standalone fail-closed Scope Intelligence evaluator preserving USER_EDIT > AI_EDIT semantics. The Memory Engine remains server-authoritative and now accepts the ld-runtime-bus/1 trust protocol while retaining legacy 2.4.21 compatibility and signed license/device/trust checks. Editor Direct remains the only write authority; Context/Scope are not yet inserted into its Plan/Shadow/Apply path in this candidate. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
+  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Context Pack is now injected into Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence is mandatory before the original Editor Direct writer is invoked; USER_EDIT > AI_EDIT, approved-plan checks and broad-rewrite detection fail closed before any Git blob write, and skip-approval cannot bypass Scope. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. Memory Engine accepts ld-runtime-bus/1 while retaining legacy 2.4.21 compatibility and signed license/device/trust checks. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
 }
