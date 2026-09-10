@@ -6,12 +6,14 @@ const manifest = JSON.parse(read('manifest.json'));
 const pkg = JSON.parse(read('release/runtime-package.json'));
 const serviceWorker = read('background/build84-service-worker.js');
 const runtime = read('background/context-intelligence-runtime-v84.js');
+const enforcement = read('background/editor-context-scope-enforcement-v84.js');
 const launcher = read('launcher/context-intelligence-v84.js');
 const memory = read('supabase/functions/ld-memory-engine/index.ts');
 
 const requiredPackagePaths = [
   'launcher/context-intelligence-v84.js',
-  'background/context-intelligence-runtime-v84.js'
+  'background/context-intelligence-runtime-v84.js',
+  'background/editor-context-scope-enforcement-v84.js'
 ];
 for (const path of requiredPackagePaths) {
   assert(pkg.paths.includes(path), `runtime-package missing ${path}`);
@@ -20,12 +22,18 @@ assert.equal(manifest.version, '2.6.84');
 for (const path of requiredPackagePaths.filter(path => path.startsWith('launcher/'))) {
   assert(manifest.content_scripts[0].js.includes(path), `manifest missing ${path}`);
 }
-assert.match(serviceWorker, /context-intelligence-runtime-v84\.js/);
+
+const contextImport = serviceWorker.indexOf("'context-intelligence-runtime-v84.js'");
+const enforcementImport = serviceWorker.indexOf("'editor-context-scope-enforcement-v84.js'");
+assert(contextImport >= 0, 'service worker must load context runtime');
+assert(enforcementImport > contextImport, 'editor enforcement must load after context runtime');
 assert.match(serviceWorker, /contextPack:\s*true/);
 assert.match(serviceWorker, /projectBrainMemory:\s*true/);
 assert.match(serviceWorker, /scopeIntelligence:\s*true/);
+assert.match(serviceWorker, /editorContextScopeEnforcement:\s*true/);
+assert.match(serviceWorker, /scopeRequiredBeforeWrite:\s*true/);
 
-for (const [name, source] of [['runtime', runtime], ['launcher', launcher]]) {
+for (const [name, source] of [['runtime', runtime], ['enforcement', enforcement], ['launcher', launcher]]) {
   assert(!/\bnew\s+MutationObserver\s*\(/.test(source), `${name} must not construct MutationObserver`);
   assert(!/\bMutationObserver\s*\(/.test(source), `${name} must not invoke MutationObserver`);
   assert(!/\bsetInterval\s*\(/.test(source), `${name} must not use setInterval`);
@@ -56,6 +64,29 @@ for (const token of [
 ]) assert(runtime.includes(token), `scope invariant missing: ${token}`);
 
 for (const token of [
+  'ld-editor-context-scope-enforcement/1',
+  'await ld84ContextBuild',
+  'EDITOR_CONTEXT_HEAD_MISMATCH',
+  'CONTEXT PACK — READ-ONLY EVIDENCE',
+  'authority: \'evidence-only\'',
+  'approvedPlan',
+  'await ld84ScopeEvaluate',
+  'EDITOR_SCOPE_BLOCKED',
+  'scopeRequiredBeforeWrite: true',
+  'skipApprovalBypassesScope: false',
+  'originalWriterAuthorityPreserved: true',
+  'originalApplyRevalidatesHead: true'
+]) assert(enforcement.includes(token), `editor enforcement invariant missing: ${token}`);
+
+const scopeCall = enforcement.indexOf('await ld84ScopeEvaluate');
+const writerCall = enforcement.indexOf('await ld84EditorApplyBase84(message)');
+assert(scopeCall >= 0 && writerCall > scopeCall, 'Scope must run before the original writer is invoked');
+assert.match(enforcement, /if \(scope\?\.ok !== true \|\| !scope\?\.report \|\| scope\.report\.allowed !== true\)/);
+assert.match(enforcement, /if \(snapshot\.headSha !== shadow\.baseHeadSha\) throw new Error\('EDITOR_HEAD_CHANGED_BEFORE_SCOPE'\)/);
+assert.match(enforcement, /humanIntentOverrides:\s*Array\.isArray\(message\.humanIntentOverrides\)/);
+assert(!/skipScope|bypassScope|scopeDisabled/i.test(enforcement), 'enforcement must expose no Scope bypass switch');
+
+for (const token of [
   "LEGACY_VERSION='2.4.21'",
   "SUPPORTED_PROTOCOLS=new Set(['ld-runtime-bus/1'])",
   'x-decrypter-client-protocol',
@@ -71,4 +102,4 @@ assert.match(launcher, /stopImmediatePropagation\(\)/);
 assert.match(launcher, /Gerar Context Pack/);
 assert.match(launcher, /Human Intent Locks ativos/);
 
-console.log('Build84.6 Context/Memory/Scope candidate: static contract PASS');
+console.log('Build84.6 Context/Memory/Scope + Editor enforcement: static contract PASS');
