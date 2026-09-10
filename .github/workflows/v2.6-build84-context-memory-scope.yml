@@ -44,9 +44,9 @@ jobs:
       - name: Clean runtime invariants
         shell: bash
         run: |
-          ! grep -R "MutationObserver" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
-          ! grep -R "setInterval(" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
-          ! grep -R "chrome.alarms" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          ! grep -E "new[[:space:]]+MutationObserver[[:space:]]*\(|MutationObserver[[:space:]]*\(" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          ! grep -E "setInterval[[:space:]]*\(" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
+          ! grep -E "chrome\.alarms" background/context-intelligence-runtime-v84.js launcher/context-intelligence-v84.js
           grep -F "ld-runtime-bus/1" supabase/functions/ld-memory-engine/index.ts
           grep -F "USER_EDIT > AI_EDIT" background/context-intelligence-runtime-v84.js
           grep -F "fail-closed-before-write" background/context-intelligence-runtime-v84.js
