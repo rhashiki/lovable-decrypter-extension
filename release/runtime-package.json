@@ -27,6 +27,7 @@
     "background/context-intelligence-runtime-v84.js",
     "background/editor-context-scope-enforcement-v84.js",
     "background/editor-supabase-preflight-enforcement-v84.js",
+    "background/editor-post-commit-verification-v84.js",
     "background/build84-service-worker.js"
   ],
   "excluded_paths":[],
@@ -45,9 +46,10 @@
     "launcher/gemini-integration-v84.js",
     "content/composer-bridge-v3.js",
     "content/composer-guardian.js",
+    "content/lovable-sync-verifier.js",
     "updates/latest.json",
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Context Pack is injected into Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence is mandatory before the original Editor Direct writer is invoked; USER_EDIT > AI_EDIT, approved-plan checks and broad-rewrite detection fail closed before any Git blob write, and skip-approval cannot bypass Scope. Supabase writes use only commit-pinned new migration files after Git succeeds. Before a Supabase-required Shadow is returned for review, the resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. Failed preflight discards the Shadow. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
+  "notes":"Build84.6 isolated candidate based on the browser-homologated clean Build84 runtime. Context Pack is injected into Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence is mandatory before the original Editor Direct writer is invoked; USER_EDIT > AI_EDIT, approved-plan checks and broad-rewrite detection fail closed before any Git blob write, and skip-approval cannot bypass Scope. Supabase writes use only commit-pinned new migration files after Git succeeds. Before a Supabase-required Shadow is returned for review, the resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. Failed preflight discards the Shadow. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. After any successful Git write, a separate read-only verifier refreshes the bound GitHub branch once and requires exact repository, branch and commit SHA equality. This GitHub confirmation is explicitly not treated as proof that the Lovable preview has absorbed the commit. Automatic Lovable preview verification remains disabled until an official runtime-safe observable exists; the legacy Firebase session-token scraping verifier is explicitly forbidden. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
 }
