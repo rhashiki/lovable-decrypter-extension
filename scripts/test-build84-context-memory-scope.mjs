@@ -111,9 +111,9 @@ for (const token of [
   'autorizo explicitamente: (1) criar o commit no GitHub; (2) depois do commit, aplicar as migrations',
   'GitHub aplicado · Supabase pendente',
   'Tentar Supabase novamente',
-  "type:'ld84.editor.supabase.retry'",
-  'não repita o Git'
+  "type:'ld84.editor.supabase.retry'"
 ]) assert(editorUi.includes(token), `Editor UI Supabase disclosure missing: ${token}`);
+assert(/não repita o Git/i.test(editorUi), 'Editor UI must warn not to repeat Git after partial Supabase failure');
 
 for (const token of [
   "LEGACY_VERSION='2.4.21'",
