@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Lovable Decrypter",
   "version": "2.6.84",
-  "version_name": "2.6 Build 84 · Functional Parity Refinement",
-  "description": "Stable Build 84 clean runtime with validated launcher dimensions, automatic project integration matching, event-driven GitHub Sync/history, Supabase project management, optional Gemini configuration and a single functional local-AI Editor Direct authority. No global observers, content polling, mount guardians or heavy runtime activation at boot.",
+  "version_name": "2.6 Build 84 · Context / Memory / Scope Candidate",
+  "description": "Stable Build 84 clean runtime plus isolated Context Pack, Project Brain memory and Scope Intelligence reattachment. Context is generated on demand from the bound GitHub repository and trusted project memory; scope remains fail-closed. No global observers, content polling, mount guardians or heavy runtime activation at boot.",
   "icons": {"16":"assets/icon16.png","32":"assets/icon32.png","48":"assets/icon48.png","128":"assets/icon128.png"},
   "permissions": ["storage"],
   "host_permissions": [
@@ -30,11 +30,12 @@
       "launcher/github-sync-v84-3.js",
       "launcher/integration-resource-entrypoints-v84.js",
       "launcher/gemini-integration-v84-2.js",
-      "launcher/operation-feedback-v84.js"
+      "launcher/operation-feedback-v84.js",
+      "launcher/context-intelligence-v84.js"
     ],
     "run_at": "document_start",
     "all_frames": false
   }],
   "browser_specific_settings": {"gecko":{"id":"lovable-decrypter@rhashiki.dev","strict_min_version":"121.0","data_collection_permissions":{"required":["authenticationInfo","websiteContent"]}}},
-  "action": {"default_title":"Lovable Decrypter v2.6.84 · Functional Parity Refinement"}
+  "action": {"default_title":"Lovable Decrypter v2.6.84 · Context / Memory / Scope Candidate"}
 }
