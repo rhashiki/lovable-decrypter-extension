@@ -60,6 +60,7 @@
       last: null
     };
     aiCall = 0;
+    if (typeof globalThis.ld84EditorCancelBegin === 'function') globalThis.ld84EditorCancelBegin();
     return active;
   }
 
@@ -68,21 +69,25 @@
     await publish('complete', label, active.total, active.total, 'complete');
     active = null;
     aiCall = 0;
+    if (typeof globalThis.ld84EditorCancelEnd === 'function') globalThis.ld84EditorCancelEnd();
   }
 
   async function finishError(error) {
     if (!active) return;
     const current = active.last || {};
+    const code = String(error?.code || error?.message || 'EDITOR_OPERATION_FAILED');
+    const cancelled = code === 'EDITOR_CANCELLED_BY_USER';
     await publish(
-      current.phase || 'error',
-      `Falha: ${String(error?.code || error?.message || error || 'EDITOR_OPERATION_FAILED').slice(0, 180)}`,
+      cancelled ? 'cancelled' : (current.phase || 'error'),
+      cancelled ? 'Operação cancelada · nenhum write executado' : `Falha: ${code.slice(0, 180)}`,
       Number(current.step || 0),
       active.total,
-      'error',
-      { code: String(error?.code || error?.message || 'EDITOR_OPERATION_FAILED') }
+      cancelled ? 'cancelled' : 'error',
+      { code }
     );
     active = null;
     aiCall = 0;
+    if (typeof globalThis.ld84EditorCancelEnd === 'function') globalThis.ld84EditorCancelEnd();
   }
 
   async function aiWithProgress(messages, options = {}) {
@@ -95,19 +100,15 @@
     } else {
       await publish('shadow-model', 'Shadow Build · gerando alterações em memória', 5, active.total, 'running', { indeterminate: true });
     }
-    try {
-      const result = await aiBase84(messages, options);
-      if (active?.kind === 'plan') {
-        await publish('planning-validate', 'Planejamento · resposta recebida, validando escopo', 3, active.total);
-      } else if (aiCall === 1) {
-        await publish('planning-complete', 'Planejamento concluído · preparando contexto do projeto', 2, active.total);
-      } else {
-        await publish('shadow-validate', 'Shadow Build recebido · validando arquivos, Scope e preflight', 7, active.total);
-      }
-      return result;
-    } catch (error) {
-      throw error;
+    const result = await aiBase84(messages, options);
+    if (active?.kind === 'plan') {
+      await publish('planning-validate', 'Planejamento · resposta recebida, validando escopo', 3, active.total);
+    } else if (aiCall === 1) {
+      await publish('planning-complete', 'Planejamento concluído · preparando contexto do projeto', 2, active.total);
+    } else {
+      await publish('shadow-validate', 'Shadow Build recebido · validando arquivos, Scope e preflight', 7, active.total);
     }
+    return result;
   }
 
   async function contextWithProgress(input = {}) {
@@ -157,6 +158,7 @@
       truthfulMilestonesOnly: true,
       syntheticTimeProgress: false,
       modelWaitIndeterminate: true,
+      cancellablePipeline: true,
       globalEditorOperationLock: true
     }),
     configurable: false,
