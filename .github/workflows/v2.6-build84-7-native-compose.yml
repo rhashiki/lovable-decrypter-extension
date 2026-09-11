@@ -1,0 +1,104 @@
+name: v2.6 Build84.7 Native Compose Candidate
+
+on:
+  push:
+    branches:
+      - build/84.7-native-compose-chat
+    paths:
+      - 'manifest.json'
+      - 'release/runtime-package.json'
+      - 'launcher/**'
+      - 'background/**'
+      - 'scripts/test-build84-native-compose.mjs'
+      - 'scripts/test-build84-editor-enforcement-runtime.mjs'
+      - 'scripts/test-build84-editor-supabase-runtime.mjs'
+      - 'scripts/test-build84-post-commit-verification.mjs'
+      - 'scripts/test-build84-editor-model-gateway.mjs'
+      - '.github/workflows/v2.6-build84-7-native-compose.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "build/84.7-native-compose-chat"
+          test "$(node -p "require('./manifest.json').version")" = "2.6.84.7"
+          test "$(node -p "require('./release/runtime-package.json').candidate")" = "2.6.84.7"
+          echo "CANDIDATE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Native compose contract
+        run: node scripts/test-build84-native-compose.mjs
+
+      - name: Regression smokes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-build84-editor-enforcement-runtime.mjs
+          node scripts/test-build84-editor-supabase-runtime.mjs
+          node scripts/test-build84-post-commit-verification.mjs
+          node scripts/test-build84-editor-model-gateway.mjs
+
+      - name: Syntax check shipped JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');const cp=require('child_process');const pkg=require('./release/runtime-package.json');
+          const files=[];function walk(p){const s=fs.lstatSync(p);if(s.isSymbolicLink())throw new Error(`symlink ${p}`);if(s.isDirectory())for(const n of fs.readdirSync(p))walk(`${p}/${n}`);else files.push(p);}
+          for(const p of pkg.paths)walk(p);
+          for(const f of files.filter(f=>f.endsWith('.js')))cp.execFileSync(process.execPath,['--check',f],{stdio:'inherit'});
+          NODE
+
+      - name: Build allowlisted package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build84-7-stage
+          node <<'NODE'
+          const fs=require('fs');const path=require('path');const pkg=require('./release/runtime-package.json');const stage='build84-7-stage';
+          const sensitive=new Set((pkg.forbidden_extensions||[]).map(x=>String(x).toLowerCase()));const forbidden=new Set(pkg.forbidden_paths||[]);
+          function copy(src){const n=src.replace(/\\/g,'/').replace(/^\.\//,'').replace(/\/+$/,'');if(!n||n.startsWith('/')||n.split('/').includes('..'))throw new Error(`unsafe ${src}`);if(forbidden.has(n))throw new Error(`forbidden ${n}`);const s=fs.lstatSync(n);if(s.isSymbolicLink())throw new Error(`symlink ${n}`);const dest=path.join(stage,n);if(s.isDirectory()){fs.mkdirSync(dest,{recursive:true});for(const x of fs.readdirSync(n))copy(`${n}/${x}`);return;}if(sensitive.has(path.extname(n).toLowerCase()))throw new Error(`sensitive ${n}`);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(n,dest);}
+          fs.mkdirSync(stage,{recursive:true});for(const p of pkg.paths)copy(p);
+          NODE
+          test -f build84-7-stage/launcher/editor-compose-bridge-v84.js
+          test -f build84-7-stage/background/editor-cancel-runtime-v84.js
+          test ! -e build84-7-stage/supabase
+          test ! -e build84-7-stage/scripts
+          test ! -e build84-7-stage/content
+          ! grep -R -E 'window\.fetch\s*=|XMLHttpRequest\.prototype|sendBeacon\s*=' build84-7-stage/launcher/editor-compose-bridge-v84.js
+          ! grep -R -E --exclude='*.map' 'api\.lovable\.dev|firebaseLocalStorageDb|firebase:authUser:|/gitsync|/git-sync' build84-7-stage >/tmp/forbidden-private-lovable.txt
+
+      - name: Create candidate ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="Lovable-Decrypter-v2.6.84.7-native-compose-chat.zip"
+          (cd build84-7-stage && zip -X -qr "../$ZIP" .)
+          unzip -Z1 "$ZIP" | LC_ALL=C sort > "${ZIP%.zip}.manifest.txt"
+          sha256sum "$ZIP" | tee "$ZIP.sha256"
+          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Upload candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lovable-Decrypter-v2.6.84.7-native-compose-chat
+          path: |
+            ${{ env.ZIP_NAME }}
+            ${{ env.ZIP_NAME }}.sha256
+            Lovable-Decrypter-v2.6.84.7-native-compose-chat.manifest.txt
+          if-no-files-found: error
+          retention-days: 14
