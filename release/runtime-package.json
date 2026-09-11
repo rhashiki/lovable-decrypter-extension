@@ -9,6 +9,8 @@
     "launcher/account-controller-v84.js",
     "launcher/ux-polish-v84-3.js",
     "launcher/editor-direct-authority-v84.js",
+    "launcher/editor-progress-ui-v84.js",
+    "launcher/editor-compose-bridge-v84.js",
     "launcher/integration-resource-manager-v84-3.js",
     "launcher/supabase-project-manager-v84-2.js",
     "launcher/project-auto-binding-v84.js",
@@ -29,6 +31,7 @@
     "background/editor-context-scope-enforcement-v84.js",
     "background/editor-supabase-preflight-enforcement-v84.js",
     "background/editor-post-commit-verification-v84.js",
+    "background/editor-progress-runtime-v84.js",
     "background/build84-service-worker.js"
   ],
   "excluded_paths":[],
@@ -52,5 +55,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.6 isolated browser-homologation candidate. Context Pack enters Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence remains mandatory before the original Editor Direct writer; USER_EDIT > AI_EDIT and approved-plan checks fail closed before Git writes. Editor AI execution is provider-selected before inference: a configured healthy localhost runtime may execute locally; otherwise the service-worker bridge uses the user's encrypted Gemini BYOK configuration through the authenticated ld-editor-model-gateway backend. There is no cross-provider retry after inference begins, no prompt persistence, and paid Gemini mode is forbidden in this candidate. The runtime root remains excluded from the extension package, so Docker/Ollama is not a customer installation prerequisite. Supabase writes use only commit-pinned new migration files after Git succeeds. Resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. After any successful Git write, a separate read-only verifier refreshes the bound GitHub branch once and requires exact repository, branch and commit SHA equality. GitHub HEAD confirmation is not proof that Lovable preview absorbed the commit. Automatic Lovable preview verification remains disabled; legacy Firebase session-token scraping is forbidden. No MutationObserver, continuous polling, shell inert takeover, mount guardian, network monkeypatch or heavy provider activation at boot is shipped."
+  "notes":"Build84.6 isolated browser-homologation candidate. Context Pack enters Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence remains mandatory before the original Editor Direct writer; USER_EDIT > AI_EDIT and approved-plan checks fail closed before Git writes. Editor AI execution is provider-selected before inference: a configured healthy localhost runtime may execute locally; otherwise the service-worker bridge uses the user's encrypted Gemini BYOK configuration through the authenticated ld-editor-model-gateway backend. There is no cross-provider retry after inference begins, no prompt persistence, and paid Gemini mode is forbidden in this candidate. The runtime root remains excluded from the extension package, so Docker/Ollama is not a customer installation prerequisite. Editor progress is event-driven and advances only when real pipeline milestones complete; model waits are explicitly indeterminate rather than time-simulated. The native Lovable composer receives an opt-in Decrypter control that routes Enter/Enviar into the existing Editor Direct review flow without monkeypatching fetch, XMLHttpRequest or sendBeacon; when disabled, Lovable behavior is untouched. Supabase writes use only commit-pinned new migration files after Git succeeds. Resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. After any successful Git write, a separate read-only verifier refreshes the bound GitHub branch once and requires exact repository, branch and commit SHA equality. GitHub HEAD confirmation is not proof that Lovable preview absorbed the commit. Automatic Lovable preview verification remains disabled; legacy Firebase session-token scraping is forbidden. No MutationObserver, continuous polling, shell inert takeover, mount guardian, global network monkeypatch or heavy provider activation at boot is shipped."
 }
