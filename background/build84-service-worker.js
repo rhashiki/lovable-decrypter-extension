@@ -10,7 +10,8 @@ importScripts(
   'context-intelligence-runtime-v84.js',
   'editor-context-scope-enforcement-v84.js',
   'editor-supabase-preflight-enforcement-v84.js',
-  'editor-post-commit-verification-v84.js'
+  'editor-post-commit-verification-v84.js',
+  'editor-progress-runtime-v84.js'
 );
 
 Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
@@ -19,6 +20,9 @@ Object.defineProperty(globalThis, 'LovableDecrypterBuild84ServiceWorker', {
     mode: 'event-driven',
     editorDirect: true,
     editorModelGatewayBridge: true,
+    editorProgress: true,
+    editorProgressTruthfulMilestones: true,
+    editorProgressSyntheticTime: false,
     localAiOptional: true,
     geminiByokFallback: true,
     crossProviderRetry: false,
