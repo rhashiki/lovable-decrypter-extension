@@ -1,0 +1,71 @@
+{
+  "schema": "ld-build84-browser-homologation-checkpoint/2",
+  "version": "2.6.84",
+  "phase": "84.6",
+  "branch": "v2.6.84-context-memory-scope",
+  "candidate_commit": "5ec958bc2c9f22fc15ebb6cedefe8a24ad835a0d",
+  "workflow_run": 34593896016,
+  "workflow_conclusion": "success",
+  "artifact_id": 10261690148,
+  "artifact_outer_digest": "sha256:b1ecd227dea25e540608fd94a4b0681dd567615af2ea34035a0036757bc2d403",
+  "candidate_zip_sha256": "0dbb310499a9331e783e403d4860ee7a631560234f4c797f9d73fcc2181316f1",
+  "release": false,
+  "merge_to_main": false,
+  "browser_homologation": {
+    "customer_zero": {
+      "fresh_lovable_account": "passed",
+      "fresh_github_account": "passed",
+      "fresh_supabase_account": "passed",
+      "github_repository_isolation": "passed",
+      "supabase_account_isolation": "passed",
+      "lovable_project_detection": "passed",
+      "github_auto_binding": "passed",
+      "supabase_auto_binding": "passed",
+      "github_head_read": "passed"
+    },
+    "regressions_found_and_fixed": [
+      {
+        "code": "GITHUB_SYNC_FIELDS_STALE_AFTER_REFRESH",
+        "found_in_candidate": "60680066482c78d62f37e63a782e70730609b6a7",
+        "fixed_commit": "64f331263c0c92c07cda9e7d8d66d15819ee389e",
+        "status": "fixed_ci_green"
+      },
+      {
+        "code": "LOCAL_RUNTIME_UNREACHABLE_BLOCKS_FRESH_CLIENT",
+        "found_in_candidate": "60680066482c78d62f37e63a782e70730609b6a7",
+        "resolution": "Editor AI provider selection now health-gates optional localhost execution and otherwise routes through authenticated Gemini BYOK broker before inference. No cross-provider retry occurs after inference begins.",
+        "bridge": "background/editor-model-gateway-bridge-v84.js",
+        "backend": "ld-editor-model-gateway",
+        "status": "fixed_ci_green"
+      }
+    ]
+  },
+  "editor_ai_policy": {
+    "local_runtime_customer_prerequisite": false,
+    "local_runtime_optional": true,
+    "gemini_byok_fallback": true,
+    "provider_selected_before_execution": true,
+    "cross_provider_retry": false,
+    "paid_mode_allowed": false,
+    "prompt_persistence": false,
+    "trust_protocol": "ld-runtime-bus/1",
+    "client_version": "2.6.84"
+  },
+  "backend": {
+    "ld_editor_model_gateway": {
+      "status": "ACTIVE",
+      "version": 1,
+      "verify_jwt": false,
+      "custom_auth": ["license", "device", "trust"]
+    },
+    "ld_editor_supabase_apply": "ACTIVE",
+    "ld_memory_engine": "ACTIVE"
+  },
+  "remaining_manual_gates": [
+    "Install candidate commit 5ec958bc and rerun Plan ZERO WRITE on Project Bloom.",
+    "If Gemini BYOK is not configured, configure it through the extension integration UI and verify GEMINI_KEY_REQUIRED is actionable rather than LOCAL_RUNTIME_UNREACHABLE.",
+    "Verify Plan performs zero Git/Supabase writes and preserves the current GitHub HEAD.",
+    "Continue Shadow Build, Scope, Git Apply, Supabase migration and recovery tests only after Plan passes."
+  ],
+  "status": "CANDIDATE_READY_FOR_BROWSER_RETEST"
+}
