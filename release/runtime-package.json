@@ -1,6 +1,6 @@
 {
   "schema":"ld-runtime-package/1",
-  "candidate":"2.6.84",
+  "candidate":"2.6.84.7",
   "paths":[
     "manifest.json",
     "assets",
@@ -28,6 +28,7 @@
     "background/gemini-provider-runtime-v84.js",
     "background/editor-model-gateway-bridge-v84.js",
     "background/editor-ai-rate-limit-v84.js",
+    "background/editor-cancel-runtime-v84.js",
     "background/context-intelligence-runtime-v84.js",
     "background/editor-context-scope-enforcement-v84.js",
     "background/editor-supabase-preflight-enforcement-v84.js",
@@ -56,5 +57,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.6 isolated browser-homologation candidate. Context Pack enters Editor Direct Shadow Build strictly as read-only evidence with Project Brain memory and HEAD provenance. Scope Intelligence remains mandatory before the original Editor Direct writer; USER_EDIT > AI_EDIT and approved-plan checks fail closed before Git writes. Editor AI execution is provider-selected before inference: a configured healthy localhost runtime may execute locally; otherwise the service-worker bridge uses the user's encrypted Gemini BYOK configuration through the authenticated ld-editor-model-gateway backend. Gemini HTTP 429 receives at most one bounded retry while staying on the same provider; persistent rate limiting fails closed as GEMINI_RATE_LIMITED. There is no cross-provider retry after inference begins, no prompt persistence, and paid Gemini mode is forbidden in this candidate. The runtime root remains excluded from the extension package, so Docker/Ollama is not a customer installation prerequisite. Editor progress is event-driven and advances only when real pipeline milestones complete; model and rate-limit waits are explicitly indeterminate rather than time-simulated. The native Lovable composer receives an opt-in Decrypter control that routes Enter/Enviar into the existing Editor Direct review flow without monkeypatching fetch, XMLHttpRequest or sendBeacon; when disabled, Lovable behavior is untouched. Supabase writes use only commit-pinned new migration files after Git succeeds. Resource preflight verifies the selected Supabase project, official migration-history endpoint and GitHub repository selection. The original Editor Direct Apply remains the sole Git write authority and repeats Trust, binding and HEAD revalidation after Scope approval. After any successful Git write, a separate read-only verifier refreshes the bound GitHub branch once and requires exact repository, branch and commit SHA equality. GitHub HEAD confirmation is not proof that Lovable preview absorbed the commit. Automatic Lovable preview verification remains disabled; legacy Firebase session-token scraping is forbidden. No MutationObserver, continuous polling, shell inert takeover, mount guardian, global network monkeypatch or heavy provider activation at boot is shipped."
+  "notes":"Build84.7 native-compose homologation candidate. The Lovable compose is the primary Editor Direct surface: intercepted commands are rendered inline in the chat column, Plan/Build use the existing Editor Direct authority, progress is driven only by confirmed runtime milestones, later commands are queued, and Build stops at an explicit Shadow review before any write. The sidebar Editor Direct control toggles native-compose mode; Alt+click preserves access to the advanced modal. Cancellation discards the active pipeline result and prevents downstream writes; an already-issued provider request may still finish remotely, but its result is ignored. Context Pack remains read-only evidence, Project Brain memory remains evidence only, Scope remains fail-closed with USER_EDIT > AI_EDIT, and the original Editor Direct writer remains the sole Git write authority. Gemini 429 receives at most one bounded same-provider retry. Supabase writes remain Git-first, commit-pinned migrations with official migration history and idempotent retry. GitHub HEAD is revalidated before write and confirmed after commit. No fetch/XMLHttpRequest/sendBeacon monkeypatch, no MutationObserver, no continuous polling, no remote executable core, no prompt persistence, and no automatic Lovable preview claim are shipped."
 }
