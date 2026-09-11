@@ -25,7 +25,7 @@
       "launcher/ux-polish-v84-3.js",
       "launcher/editor-direct-authority-v84.js",
       "launcher/editor-progress-ui-v84.js",
-      "launcher/editor-compose-bridge-v84.js",
+      "launcher/editor-native-chat-v84.js",
       "launcher/integration-resource-manager-v84-3.js",
       "launcher/supabase-project-manager-v84-2.js",
       "launcher/project-auto-binding-v84.js",
