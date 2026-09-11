@@ -10,7 +10,7 @@
     "launcher/ux-polish-v84-3.js",
     "launcher/editor-direct-authority-v84.js",
     "launcher/editor-progress-ui-v84.js",
-    "launcher/editor-compose-bridge-v84.js",
+    "launcher/editor-native-chat-v84.js",
     "launcher/integration-resource-manager-v84-3.js",
     "launcher/supabase-project-manager-v84-2.js",
     "launcher/project-auto-binding-v84.js",
@@ -45,6 +45,7 @@
     "launcher/ux-polish-v84.js",
     "launcher/ux-polish-v84-2.js",
     "launcher/editor-direct-v84.js",
+    "launcher/editor-compose-bridge-v84.js",
     "launcher/integration-resource-manager-v84.js",
     "launcher/integration-resource-manager-v84-2.js",
     "launcher/supabase-project-manager-v84.js",
@@ -57,5 +58,5 @@
     "updates/release.json"
   ],
   "forbidden_extensions":[".pem",".key",".p12",".pfx"],
-  "notes":"Build84.7 native-compose homologation candidate. The Lovable compose is the primary Editor Direct surface: intercepted commands are rendered inline in the chat column, Plan/Build use the existing Editor Direct authority, progress is driven only by confirmed runtime milestones, later commands are queued, and Build stops at an explicit Shadow review before any write. The sidebar Editor Direct control toggles native-compose mode; Alt+click preserves access to the advanced modal. Cancellation discards the active pipeline result and prevents downstream writes; an already-issued provider request may still finish remotely, but its result is ignored. Context Pack remains read-only evidence, Project Brain memory remains evidence only, Scope remains fail-closed with USER_EDIT > AI_EDIT, and the original Editor Direct writer remains the sole Git write authority. Gemini 429 receives at most one bounded same-provider retry. Supabase writes remain Git-first, commit-pinned migrations with official migration history and idempotent retry. GitHub HEAD is revalidated before write and confirmed after commit. No fetch/XMLHttpRequest/sendBeacon monkeypatch, no MutationObserver, no continuous polling, no remote executable core, no prompt persistence, and no automatic Lovable preview claim are shipped."
+  "notes":"Build84.7 native-compose homologation candidate. launcher/editor-native-chat-v84.js is the sole shipped native-compose surface; the earlier experimental editor-compose-bridge-v84.js is explicitly forbidden from the package. The Lovable compose is the primary Editor Direct entrypoint: commands are rendered inline, Plan/Build use the existing Editor authority, progress follows confirmed runtime milestones, later commands are queued, and Build stops at explicit Shadow review before any write. Sidebar Editor Direct toggles native-compose mode; Alt+click keeps the advanced modal available. Cancellation discards the active Plan/Build result and prevents downstream writes; an already-issued provider request may finish remotely but is ignored. Context Pack stays read-only evidence, Project Brain stays evidence only, Scope remains fail-closed with USER_EDIT > AI_EDIT, and the original Editor Direct writer remains the sole Git authority. Gemini 429 gets at most one bounded same-provider retry. Supabase remains Git-first with commit-pinned migrations, official migration history and idempotent retry. GitHub HEAD is revalidated before write and confirmed after commit. No fetch/XMLHttpRequest/sendBeacon monkeypatch, MutationObserver, continuous polling, remote executable core, prompt persistence or automatic Lovable preview claim is shipped."
 }
