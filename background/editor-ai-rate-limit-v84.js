@@ -16,6 +16,17 @@
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  function cancelled() {
+    return typeof globalThis.ld84EditorCancelWasRequested === 'function' && globalThis.ld84EditorCancelWasRequested() === true;
+  }
+
+  function cancellationError() {
+    const error = new Error('EDITOR_CANCELLED_BY_USER');
+    error.code = 'EDITOR_CANCELLED_BY_USER';
+    error.details = { safe: true, retryAttempted: false, writeExecuted: false };
+    return error;
+  }
+
   function parseRetryMs(error) {
     const details = error?.details && typeof error.details === 'object' ? error.details : {};
     const explicit = Number(details.retry_after_seconds || details.retryAfterSeconds || 0);
@@ -29,7 +40,7 @@
   async function publishRetry(delayMs) {
     const stored = await new Promise(resolve => chrome.storage.local.get([PROGRESS_KEY], value => resolve(value || {})));
     const current = stored[PROGRESS_KEY];
-    if (!current || current.status !== 'running') return;
+    if (!current || current.status !== 'running' || cancelled()) return;
     const next = {
       ...current,
       label: `Gemini atingiu o limite momentâneo · retry único em ${(delayMs / 1000).toFixed(delayMs % 1000 ? 1 : 0)} s`,
@@ -50,11 +61,13 @@
       return await routedBase84(messages, options);
     } catch (error) {
       if (!rateLimited(error)) throw error;
+      if (cancelled()) throw cancellationError();
 
       // Preserve provider determinism. If local became eligible after the Gemini
       // attempt, do not retry through the router because that could switch providers.
       const settings = await ld84EditorLocalSettings();
       const health = await ld84EditorHealth(settings);
+      if (cancelled()) throw cancellationError();
       if (health?.ok === true && Boolean(settings?.token)) {
         const locked = new Error('GEMINI_RATE_LIMITED');
         locked.code = 'GEMINI_RATE_LIMITED';
@@ -70,10 +83,12 @@
       const delayMs = parseRetryMs(error);
       await publishRetry(delayMs);
       await sleep(delayMs);
+      if (cancelled()) throw cancellationError();
 
       try {
         return await routedBase84(messages, { ...options, rateLimitRetry: 1 });
       } catch (retryError) {
+        if (cancelled()) throw cancellationError();
         if (!rateLimited(retryError)) throw retryError;
         const finalError = new Error('GEMINI_RATE_LIMITED');
         finalError.code = 'GEMINI_RATE_LIMITED';
@@ -97,6 +112,7 @@
       maxRetries: 1,
       maxRetryDelayMs: MAX_RETRY_DELAY_MS,
       providerSwitchAfterStart: false,
+      retrySuppressedAfterCancellation: true,
       silentInfiniteRetry: false
     }),
     configurable: false,
