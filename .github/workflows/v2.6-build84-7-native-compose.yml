@@ -74,12 +74,13 @@ jobs:
           function copy(src){const n=src.replace(/\\/g,'/').replace(/^\.\//,'').replace(/\/+$/,'');if(!n||n.startsWith('/')||n.split('/').includes('..'))throw new Error(`unsafe ${src}`);if(forbidden.has(n))throw new Error(`forbidden ${n}`);const s=fs.lstatSync(n);if(s.isSymbolicLink())throw new Error(`symlink ${n}`);const dest=path.join(stage,n);if(s.isDirectory()){fs.mkdirSync(dest,{recursive:true});for(const x of fs.readdirSync(n))copy(`${n}/${x}`);return;}if(sensitive.has(path.extname(n).toLowerCase()))throw new Error(`sensitive ${n}`);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(n,dest);}
           fs.mkdirSync(stage,{recursive:true});for(const p of pkg.paths)copy(p);
           NODE
-          test -f build84-7-stage/launcher/editor-compose-bridge-v84.js
+          test -f build84-7-stage/launcher/editor-native-chat-v84.js
+          test ! -e build84-7-stage/launcher/editor-compose-bridge-v84.js
           test -f build84-7-stage/background/editor-cancel-runtime-v84.js
           test ! -e build84-7-stage/supabase
           test ! -e build84-7-stage/scripts
           test ! -e build84-7-stage/content
-          ! grep -R -E 'window\.fetch\s*=|XMLHttpRequest\.prototype|sendBeacon\s*=' build84-7-stage/launcher/editor-compose-bridge-v84.js
+          ! grep -R -E 'window\.fetch\s*=|XMLHttpRequest\.prototype|sendBeacon\s*=' build84-7-stage/launcher/editor-native-chat-v84.js
           ! grep -R -E --exclude='*.map' 'api\.lovable\.dev|firebaseLocalStorageDb|firebase:authUser:|/gitsync|/git-sync' build84-7-stage >/tmp/forbidden-private-lovable.txt
 
       - name: Create candidate ZIP
