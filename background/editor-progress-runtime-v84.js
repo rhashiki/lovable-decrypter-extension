@@ -14,6 +14,9 @@
   const buildBase84 = ld84EditorBuild;
   const aiBase84 = ld84EditorLocalChat;
   const contextBase84 = typeof ld84ContextBuild === 'function' ? ld84ContextBuild : null;
+  const assertNotCancelled = () => {
+    if (typeof globalThis.ld84EditorCancelAssert === 'function') globalThis.ld84EditorCancelAssert();
+  };
 
   function setLocal(value) {
     return new Promise(resolve => chrome.storage.local.set(value, () => resolve()));
@@ -66,6 +69,7 @@
 
   async function finishSuccess(label) {
     if (!active) return;
+    assertNotCancelled();
     await publish('complete', label, active.total, active.total, 'complete');
     active = null;
     aiCall = 0;
@@ -101,6 +105,7 @@
       await publish('shadow-model', 'Shadow Build · gerando alterações em memória', 5, active.total, 'running', { indeterminate: true });
     }
     const result = await aiBase84(messages, options);
+    assertNotCancelled();
     if (active?.kind === 'plan') {
       await publish('planning-validate', 'Planejamento · resposta recebida, validando escopo', 3, active.total);
     } else if (aiCall === 1) {
@@ -115,6 +120,7 @@
     if (!active || active.kind !== 'build' || !contextBase84) return contextBase84 ? contextBase84(input) : null;
     await publish('context-pack', 'Build · montando Context Pack e Project Brain', 3, active.total, 'running', { indeterminate: true });
     const result = await contextBase84(input);
+    assertNotCancelled();
     await publish('context-ready', 'Build · Context Pack pronto e HEAD conferido', 4, active.total);
     return result;
   }
@@ -124,6 +130,7 @@
     await publish('prepare', 'Planejamento · validando vínculo, branch e HEAD', 0, 4, 'running', { indeterminate: true });
     try {
       const result = await planBase84(message);
+      assertNotCancelled();
       await finishSuccess('Plano validado · ZERO WRITE confirmado');
       return result;
     } catch (error) {
@@ -137,6 +144,7 @@
     await publish('prepare', 'Build · validando vínculo, branch e HEAD', 0, 8, 'running', { indeterminate: true });
     try {
       const result = await buildBase84(message);
+      assertNotCancelled();
       await finishSuccess('Shadow Build validado · nenhum write executado');
       return result;
     } catch (error) {
@@ -159,6 +167,7 @@
       syntheticTimeProgress: false,
       modelWaitIndeterminate: true,
       cancellablePipeline: true,
+      lateResultDiscard: true,
       globalEditorOperationLock: true
     }),
     configurable: false,
