@@ -3,7 +3,7 @@
   "name": "Lovable Decrypter",
   "version": "2.6.84.7",
   "version_name": "2.6 Build 84.7 · Native Compose Chat Candidate",
-  "description": "Build 84 clean runtime with Context Pack, Project Brain, fail-closed Scope and Editor Direct embedded into the native Lovable compose with truthful milestones, queueing, cancellation and explicit Shadow review before writes.",
+  "description": "Build 84 clean runtime with Context Pack, Project Brain, fail-closed Scope and Editor Direct embedded into the native Lovable compose with truthful milestones, queueing, cancellation, green/red compose state highlighting and explicit Shadow review before writes.",
   "icons": {"16":"assets/icon16.png","32":"assets/icon32.png","48":"assets/icon48.png","128":"assets/icon128.png"},
   "permissions": ["storage"],
   "host_permissions": [
@@ -26,6 +26,7 @@
       "launcher/editor-direct-authority-v84.js",
       "launcher/editor-progress-ui-v84.js",
       "launcher/editor-native-chat-v84.js",
+      "launcher/editor-compose-state-highlight-v84.js",
       "launcher/integration-resource-manager-v84-3.js",
       "launcher/supabase-project-manager-v84-2.js",
       "launcher/project-auto-binding-v84.js",
