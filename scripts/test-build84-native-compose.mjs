@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const read = path => fs.readFileSync(path, 'utf8');
 const manifest = JSON.parse(read('manifest.json'));
 const pkg = JSON.parse(read('release/runtime-package.json'));
-const bridge = read('launcher/editor-compose-bridge-v84.js');
+const chat = read('launcher/editor-native-chat-v84.js');
 const progress = read('background/editor-progress-runtime-v84.js');
 const cancel = read('background/editor-cancel-runtime-v84.js');
 const serviceWorker = read('background/build84-service-worker.js');
@@ -13,38 +13,42 @@ const enforcement = read('background/editor-context-scope-enforcement-v84.js');
 assert.equal(manifest.version, '2.6.84.7');
 assert.equal(pkg.candidate, '2.6.84.7');
 for (const path of [
-  'launcher/editor-compose-bridge-v84.js',
+  'launcher/editor-native-chat-v84.js',
   'launcher/editor-progress-ui-v84.js',
   'background/editor-progress-runtime-v84.js',
   'background/editor-cancel-runtime-v84.js'
 ]) assert(pkg.paths.includes(path), `runtime package missing ${path}`);
-for (const path of ['launcher/editor-compose-bridge-v84.js','launcher/editor-progress-ui-v84.js']) {
+for (const path of ['launcher/editor-native-chat-v84.js','launcher/editor-progress-ui-v84.js']) {
   assert(manifest.content_scripts[0].js.includes(path), `manifest missing ${path}`);
 }
+assert(!pkg.paths.includes('launcher/editor-compose-bridge-v84.js'), 'experimental bridge must not ship');
+assert(pkg.forbidden_paths.includes('launcher/editor-compose-bridge-v84.js'), 'experimental bridge must remain forbidden');
+assert(!manifest.content_scripts[0].js.includes('launcher/editor-compose-bridge-v84.js'), 'experimental bridge must not load');
 
 for (const token of [
-  "schema:'ld-editor-compose-bridge/2'",
+  "schema:'ld-editor-native-chat/1'",
   'nativeComposerPrimary:true',
-  'nativeInlineTranscript:true',
-  'explicitReviewPreserved:true',
+  'inlineTranscript:true',
+  'explicitShadowReview:true',
   'networkMonkeypatch:false',
-  "type:'ld84.editor.plan'",
+  'promptPersistence:false',
+  "type:kind==='plan'?'ld84.editor.plan':'ld84.editor.build'",
   "type:'ld84.editor.apply'",
   "type:'ld84.cancel.current'",
   'Aguardando sua revisão',
   'Shadow Build pronto · ZERO WRITE',
-  'Fila'
-]) {
-  if (token === 'Fila') assert(/fila/i.test(bridge), 'compose queue disclosure missing');
-  else assert(bridge.includes(token), `compose invariant missing: ${token}`);
-}
+  'Mensagem adicionada à fila',
+  'GitHub aplicado · Supabase pendente',
+  "type:'ld84.editor.supabase.retry'"
+]) assert(chat.includes(token), `native chat invariant missing: ${token}`);
 for (const forbidden of ['window.fetch =','XMLHttpRequest.prototype','sendBeacon =','new MutationObserver(','setInterval(']) {
-  assert(!bridge.includes(forbidden), `compose bridge forbidden surface: ${forbidden}`);
+  assert(!chat.includes(forbidden), `native chat forbidden surface: ${forbidden}`);
 }
-assert(bridge.includes('stopImmediatePropagation()'), 'native Lovable send must be stopped when Decrypter is active');
-assert(bridge.includes("current.active?'Decrypter ON':'Decrypter'"), 'compose activation indicator missing');
-assert(bridge.includes('reviewPending=true'), 'Build must pause for explicit Shadow review');
-assert(bridge.includes('apply.disabled=true'), 'Apply must start disabled until explicit approval');
+assert(chat.includes('stopImmediatePropagation()'), 'native Lovable send must be stopped when Decrypter is active');
+assert(chat.includes("state.enabled?'Decrypter ON':'Decrypter'"), 'compose activation indicator missing');
+assert(chat.includes('state.reviewPending=true'), 'Build must pause for explicit Shadow review');
+assert(chat.includes('apply.disabled=true'), 'Apply must start disabled until explicit approval');
+assert(chat.includes('advancedPanelViaAltClick:true'), 'advanced modal escape hatch must remain available');
 
 for (const token of [
   "const SCHEMA = 'ld-editor-cancel/1'",
@@ -79,6 +83,6 @@ for (const token of ['editorCancellation: true','editorCancellationWriteAfterCan
 const scopeCall = enforcement.indexOf('await ld84ScopeEvaluate');
 const writerCall = enforcement.indexOf('gitResult = await ld84EditorApplyBase84(message)');
 assert(scopeCall >= 0 && writerCall > scopeCall, 'Scope must remain before original Git writer');
-assert(enforcement.includes('originalWriterAuthorityPreserved: true'), 'native compose must not replace writer authority');
+assert(enforcement.includes('originalWriterAuthorityPreserved: true'), 'native chat must not replace writer authority');
 
 console.log('Build84.7 Native Compose Chat contract PASS');
