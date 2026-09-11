@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(path, 'utf8');
 const manifest = JSON.parse(read('manifest.json'));
 const pkg = JSON.parse(read('release/runtime-package.json'));
 const chat = read('launcher/editor-native-chat-v84.js');
+const highlight = read('launcher/editor-compose-state-highlight-v84.js');
 const progress = read('background/editor-progress-runtime-v84.js');
 const cancel = read('background/editor-cancel-runtime-v84.js');
 const serviceWorker = read('background/build84-service-worker.js');
@@ -14,11 +15,12 @@ assert.equal(manifest.version, '2.6.84.7');
 assert.equal(pkg.candidate, '2.6.84.7');
 for (const path of [
   'launcher/editor-native-chat-v84.js',
+  'launcher/editor-compose-state-highlight-v84.js',
   'launcher/editor-progress-ui-v84.js',
   'background/editor-progress-runtime-v84.js',
   'background/editor-cancel-runtime-v84.js'
 ]) assert(pkg.paths.includes(path), `runtime package missing ${path}`);
-for (const path of ['launcher/editor-native-chat-v84.js','launcher/editor-progress-ui-v84.js']) {
+for (const path of ['launcher/editor-native-chat-v84.js','launcher/editor-compose-state-highlight-v84.js','launcher/editor-progress-ui-v84.js']) {
   assert(manifest.content_scripts[0].js.includes(path), `manifest missing ${path}`);
 }
 assert(!pkg.paths.includes('launcher/editor-compose-bridge-v84.js'), 'experimental bridge must not ship');
@@ -49,6 +51,25 @@ assert(chat.includes("state.enabled?'Decrypter ON':'Decrypter'"), 'compose activ
 assert(chat.includes('state.reviewPending=true'), 'Build must pause for explicit Shadow review');
 assert(chat.includes('apply.disabled=true'), 'Apply must start disabled until explicit approval');
 assert(chat.includes('advancedPanelViaAltClick:true'), 'advanced modal escape hatch must remain available');
+
+for (const token of [
+  "schema: 'ld-editor-compose-state-highlight/1'",
+  "activeColor: 'green'",
+  "inactiveColor: 'red'",
+  "activeHex: '#22c55e'",
+  "inactiveHex: '#ef4444'",
+  "const PREF_KEY = 'ld84_native_compose'",
+  "const HIGHLIGHT_ATTR = 'data-ld84-compose-state-highlight'",
+  'layoutShift: false',
+  'networkAccess: false',
+  'mutationObserver: false',
+  'polling: false'
+]) assert(highlight.includes(token), `compose highlight invariant missing: ${token}`);
+assert(highlight.includes("border:2px solid transparent"), 'compose state must use an overlay border without layout shift');
+assert(highlight.includes('0 0 20px'), 'compose state must include visible glow');
+for (const forbidden of ['MutationObserver(', 'setInterval(', 'window.fetch', 'XMLHttpRequest', 'sendBeacon']) {
+  assert(!highlight.includes(forbidden), `compose highlight forbidden surface: ${forbidden}`);
+}
 
 for (const token of [
   "const SCHEMA = 'ld-editor-cancel/1'",
@@ -85,4 +106,4 @@ const writerCall = enforcement.indexOf('gitResult = await ld84EditorApplyBase84(
 assert(scopeCall >= 0 && writerCall > scopeCall, 'Scope must remain before original Git writer');
 assert(enforcement.includes('originalWriterAuthorityPreserved: true'), 'native chat must not replace writer authority');
 
-console.log('Build84.7 Native Compose Chat contract PASS');
+console.log('Build84.7 Native Compose Chat + state highlight contract PASS');
