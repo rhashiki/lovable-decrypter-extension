@@ -3,7 +3,7 @@
   "name": "Lovable Decrypter",
   "version": "2.6.84",
   "version_name": "2.6 Build 84 · Context / Memory / Scope Candidate",
-  "description": "Stable Build 84 clean runtime plus isolated Context Pack, Project Brain memory and Scope Intelligence reattachment. Context is generated on demand from the bound GitHub repository and trusted project memory; scope remains fail-closed. No global observers, content polling, mount guardians or heavy runtime activation at boot.",
+  "description": "Stable Build 84 clean runtime with Context Pack, Project Brain memory, Scope Intelligence, truthful pipeline progress and opt-in Editor Direct routing from the native Lovable composer. No global network monkeypatch, continuous polling, mount guardian or heavy runtime activation at boot.",
   "icons": {"16":"assets/icon16.png","32":"assets/icon32.png","48":"assets/icon48.png","128":"assets/icon128.png"},
   "permissions": ["storage"],
   "host_permissions": [
@@ -24,6 +24,8 @@
       "launcher/account-controller-v84.js",
       "launcher/ux-polish-v84-3.js",
       "launcher/editor-direct-authority-v84.js",
+      "launcher/editor-progress-ui-v84.js",
+      "launcher/editor-compose-bridge-v84.js",
       "launcher/integration-resource-manager-v84-3.js",
       "launcher/supabase-project-manager-v84-2.js",
       "launcher/project-auto-binding-v84.js",
